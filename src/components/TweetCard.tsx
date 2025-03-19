@@ -1,10 +1,21 @@
 
 import React, { useState } from "react";
-import { Check, X, AlertTriangle, Flag, ThumbsUp, Info } from "lucide-react";
+import { Check, X, AlertTriangle, Flag, ThumbsUp, Info, BookOpen, MessageSquare, HelpCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Tweet } from "@/lib/mockData";
+import {
+  Alert,
+  AlertTitle,
+  AlertDescription,
+} from "@/components/ui/alert";
 
 interface TweetCardProps {
   tweet: Tweet;
@@ -42,6 +53,12 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet, onAction }) => {
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  const getCategoryColorClass = (score: number) => {
+    if (score > 0.7) return "bg-red-DEFAULT";
+    if (score > 0.4) return "bg-yellow-DEFAULT";
+    return "bg-green-DEFAULT";
   };
 
   return (
@@ -109,30 +126,130 @@ const TweetCard: React.FC<TweetCardProps> = ({ tweet, onAction }) => {
               transition={{ duration: 0.3 }}
               className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-700"
             >
-              <div className="mb-3">
-                <h4 className="text-xs font-medium text-neutral-500 mb-1">Content Analysis</h4>
-                <div className="space-y-1">
-                  {tweet.analysis.categories.map((category, index) => (
-                    <div key={index} className="flex items-center justify-between text-sm">
-                      <span className="text-neutral-600 dark:text-neutral-400">{category.name}</span>
-                      <div className="flex items-center">
-                        <div className="w-32 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden mr-2">
-                          <div 
-                            className={cn(
-                              "h-full",
-                              category.score > 0.7 ? "bg-red-DEFAULT" : 
-                              category.score > 0.4 ? "bg-yellow-DEFAULT" : 
-                              "bg-green-DEFAULT"
-                            )}
-                            style={{ width: `${category.score * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-xs">{Math.round(category.score * 100)}%</span>
-                      </div>
+              {/* AI Explanation */}
+              {tweet.analysis.explanation && (
+                <Alert className="mb-4 bg-blue-light/5 border-blue-light/20">
+                  <HelpCircle className="h-4 w-4 text-blue-light" />
+                  <AlertTitle className="text-sm font-medium">AI Analysis</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    {tweet.analysis.explanation}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <Accordion type="single" collapsible className="mb-3">
+                {/* Content Analysis */}
+                <AccordionItem value="content-analysis">
+                  <AccordionTrigger className="text-xs font-medium py-2">
+                    <div className="flex items-center">
+                      <MessageSquare className="h-3.5 w-3.5 mr-2 text-blue-light" />
+                      Content Analysis
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 text-sm">
+                      {tweet.analysis.categories.map((category, index) => (
+                        <div key={index} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-neutral-600 dark:text-neutral-400">{category.name}</span>
+                            <div className="flex items-center">
+                              <div className="w-32 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden mr-2">
+                                <div 
+                                  className={cn(
+                                    "h-full",
+                                    getCategoryColorClass(category.score)
+                                  )}
+                                  style={{ width: `${category.score * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-xs">{Math.round(category.score * 100)}%</span>
+                            </div>
+                          </div>
+                          {category.explanation && (
+                            <p className="text-xs text-neutral-500 pl-4 border-l-2 border-neutral-200">
+                              {category.explanation}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+                
+                {/* Policy References */}
+                {tweet.analysis.policyReferences && tweet.analysis.policyReferences.length > 0 && (
+                  <AccordionItem value="policy-references">
+                    <AccordionTrigger className="text-xs font-medium py-2">
+                      <div className="flex items-center">
+                        <BookOpen className="h-3.5 w-3.5 mr-2 text-blue-light" />
+                        Related Policies
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-3">
+                        {tweet.analysis.policyReferences.map((policy, index) => (
+                          <div key={index} className="bg-neutral-50 dark:bg-neutral-800/50 p-2 rounded-md border border-neutral-200 dark:border-neutral-700">
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="text-xs font-medium">{policy.policyName}</h4>
+                              <span className="text-xs bg-blue-light/10 text-blue-light px-1.5 py-0.5 rounded-full">
+                                {Math.round(policy.relevance * 100)}% match
+                              </span>
+                            </div>
+                            <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                              {policy.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+                
+                {/* Suggested Actions */}
+                {tweet.analysis.suggestedActions && tweet.analysis.suggestedActions.length > 0 && (
+                  <AccordionItem value="suggested-actions">
+                    <AccordionTrigger className="text-xs font-medium py-2">
+                      <div className="flex items-center">
+                        <Info className="h-3.5 w-3.5 mr-2 text-blue-light" />
+                        Suggested Improvements
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {tweet.analysis.suggestedActions.map((action, index) => (
+                          <li key={index} className="text-xs text-neutral-600 dark:text-neutral-400">
+                            {action}
+                          </li>
+                        ))}
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+                
+                {/* Topics */}
+                {tweet.analysis.detectedTopics && tweet.analysis.detectedTopics.length > 0 && (
+                  <AccordionItem value="topics">
+                    <AccordionTrigger className="text-xs font-medium py-2">
+                      <div className="flex items-center">
+                        <MessageSquare className="h-3.5 w-3.5 mr-2 text-blue-light" />
+                        Detected Topics
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="flex flex-wrap gap-1">
+                        {tweet.analysis.detectedTopics.map((topic, index) => (
+                          <span 
+                            key={index} 
+                            className="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-full text-neutral-600 dark:text-neutral-400"
+                          >
+                            {topic}
+                          </span>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              </Accordion>
               
               <div className="flex items-center justify-end space-x-2 mt-3">
                 <Button

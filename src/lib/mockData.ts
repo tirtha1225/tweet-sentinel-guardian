@@ -1,221 +1,160 @@
-
 export interface Tweet {
   id: string;
   name: string;
   username: string;
   profileImage: string;
   content: string;
-  image?: string;
   timestamp: string;
   status: "flagged" | "approved" | "rejected" | "pending";
+  image?: string;
   analysis: {
-    categories: Array<{
+    categories: {
       name: string;
       score: number;
-    }>;
-    summary?: string;
+      explanation?: string;
+    }[];
+    explanation?: string;
+    detectedTopics?: string[];
+    policyReferences?: {
+      policyName: string;
+      relevance: number;
+      description: string;
+    }[];
+    suggestedActions?: string[];
   };
 }
 
+// Modify the mock tweets to include explanations
 export const mockTweets: Tweet[] = [
   {
-    id: "tweet-001",
+    id: "tweet-1",
     name: "Alex Johnson",
     username: "alexj",
     profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    content: "Just had the worst customer service experience ever at @TechStore. The staff was rude and unhelpful. Never shopping there again! 😡",
-    timestamp: "2023-05-15T14:32:00.000Z",
-    status: "flagged",
+    content: "Just had the most amazing coffee at that new place downtown! Highly recommend! #coffeelover",
+    timestamp: "2023-06-15T14:23:00Z",
+    status: "approved",
     analysis: {
       categories: [
-        { name: "Harassment", score: 0.25 },
-        { name: "Negativity", score: 0.82 },
-        { name: "Profanity", score: 0.05 },
-        { name: "Threats", score: 0.02 },
+        { name: "Harassment", score: 0.01, explanation: "No harassing content detected" },
+        { name: "Negativity", score: 0.03, explanation: "Content has a positive sentiment" },
+        { name: "Profanity", score: 0.00, explanation: "No profanity detected" },
+        { name: "Threats", score: 0.00, explanation: "No threatening language detected" }
       ],
-      summary: "This tweet contains strong negative sentiment and brand criticism, but doesn't violate platform policies."
+      explanation: "This content is positive and doesn't violate any policies.",
+      detectedTopics: ["Food & Drink", "Local Business"]
     }
   },
   {
-    id: "tweet-002",
-    name: "Sarah Miller",
-    username: "sarahmil",
-    profileImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    content: "Excited to announce that my new photography book is now available! Check it out at the link below. #Photography #NewRelease",
-    image: "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-    timestamp: "2023-05-15T16:45:00.000Z",
-    status: "approved",
-    analysis: {
-      categories: [
-        { name: "Harassment", score: 0.01 },
-        { name: "Negativity", score: 0.02 },
-        { name: "Profanity", score: 0.00 },
-        { name: "Threats", score: 0.00 },
-      ]
-    }
-  },
-  {
-    id: "tweet-003",
-    name: "Mike Wilson",
-    username: "mikewilson",
-    profileImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    content: "Can someone please tell @InternetProvider to fix their terrible service? I've been without internet for 3 days now! #BadService #Frustrated",
-    timestamp: "2023-05-15T10:20:00.000Z",
-    status: "pending",
-    analysis: {
-      categories: [
-        { name: "Harassment", score: 0.15 },
-        { name: "Negativity", score: 0.68 },
-        { name: "Profanity", score: 0.02 },
-        { name: "Threats", score: 0.01 },
-      ]
-    }
-  },
-  {
-    id: "tweet-004",
-    name: "Jessica Lee",
-    username: "jesslee",
+    id: "tweet-2",
+    name: "Taylor Swift",
+    username: "taylorswift13",
     profileImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    content: "Anyone know how to get rid of these stupid ads? They're ruining my experience on this platform. Might have to quit soon if this keeps up.",
-    timestamp: "2023-05-15T18:12:00.000Z",
+    content: "I can't believe how terrible the customer service was today. Never going back to that store again! #badservice",
+    timestamp: "2023-06-15T12:45:00Z",
     status: "flagged",
     analysis: {
       categories: [
-        { name: "Harassment", score: 0.08 },
-        { name: "Negativity", score: 0.65 },
-        { name: "Profanity", score: 0.20 },
-        { name: "Threats", score: 0.02 },
+        { name: "Harassment", score: 0.45, explanation: "Contains negative language but not targeted at individuals" },
+        { name: "Negativity", score: 0.72, explanation: "Content has negative sentiment toward a business" },
+        { name: "Profanity", score: 0.15, explanation: "No explicit profanity but contains strong negative language" },
+        { name: "Threats", score: 0.10, explanation: "No direct threats, but contains boycott implications" }
+      ],
+      explanation: "This content contains strong negative sentiment directed at a business. While criticism is allowed, the tone may violate community guidelines on respectful communication.",
+      detectedTopics: ["Customer Service", "Shopping"],
+      policyReferences: [
+        {
+          policyName: "Community Guidelines",
+          relevance: 0.6,
+          description: "Our platform encourages constructive criticism rather than purely negative content."
+        }
+      ],
+      suggestedActions: [
+        "Consider providing specific feedback rather than general negativity",
+        "Express disappointment in a more constructive manner"
       ]
     }
   },
   {
-    id: "tweet-005",
-    name: "David Brown",
-    username: "dbrown",
-    profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    content: "Fake news alert! @NewsChannel is spreading lies again. Don't believe anything they say. They're all corrupt!",
-    timestamp: "2023-05-15T09:32:00.000Z",
-    status: "rejected",
+    id: "tweet-3",
+    name: "Chris Harris",
+    username: "chrisharris",
+    profileImage: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    content: "This politician is completely corrupt and should be locked up! They're destroying our country!",
+    timestamp: "2023-06-15T10:12:00Z",
+    status: "flagged",
     analysis: {
       categories: [
-        { name: "Harassment", score: 0.35 },
-        { name: "Negativity", score: 0.78 },
-        { name: "Profanity", score: 0.05 },
-        { name: "Misinformation", score: 0.85 },
-        { name: "Threats", score: 0.03 },
+        { name: "Harassment", score: 0.65, explanation: "Contains accusatory language directed at an individual" },
+        { name: "Negativity", score: 0.85, explanation: "Highly negative sentiment without supporting evidence" },
+        { name: "Profanity", score: 0.15, explanation: "No explicit profanity but uses charged language" },
+        { name: "Threats", score: 0.40, explanation: "Suggests punitive action against an individual" }
+      ],
+      explanation: "This content makes serious accusations without evidence and calls for punitive action against an individual, which may constitute harassment under our policies.",
+      detectedTopics: ["Politics", "Government"],
+      policyReferences: [
+        {
+          policyName: "Harassment Policy",
+          relevance: 0.8,
+          description: "Content targeting individuals with unsubstantiated accusations may violate our harassment policies."
+        },
+        {
+          policyName: "Political Content Policy",
+          relevance: 0.7,
+          description: "Political discussion is allowed but must remain respectful and avoid unsubstantiated personal attacks."
+        }
+      ],
+      suggestedActions: [
+        "Focus on specific policies rather than personal attacks",
+        "Provide factual support for claims",
+        "Express political opinions without calling for punitive actions"
       ]
     }
   },
   {
-    id: "tweet-006",
-    name: "Emma Taylor",
-    username: "emma_t",
-    profileImage: "https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    content: "Happy birthday to the most amazing friend ever! @LucySmith You make every day brighter. ❤️ #BirthdayLove",
-    image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-    timestamp: "2023-05-15T20:45:00.000Z",
+    id: "tweet-4",
+    name: "James Wilson",
+    username: "jwilson",
+    profileImage: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    content: "I'm going to destroy you in the game tomorrow! Been practicing all week for this match.",
+    timestamp: "2023-06-14T22:30:00Z",
     status: "approved",
     analysis: {
       categories: [
-        { name: "Harassment", score: 0.00 },
-        { name: "Negativity", score: 0.00 },
-        { name: "Profanity", score: 0.00 },
-        { name: "Threats", score: 0.00 },
-      ]
+        { name: "Harassment", score: 0.20, explanation: "Contains competitive language but in a gaming context" },
+        { name: "Negativity", score: 0.25, explanation: "Contains aggressive language but in a sporting context" },
+        { name: "Profanity", score: 0.05, explanation: "No profanity detected" },
+        { name: "Threats", score: 0.35, explanation: "Contains language that could be perceived as threatening but is clearly in the context of a game" }
+      ],
+      explanation: "While this content contains language that could appear threatening out of context, it's clearly referring to competition in a game, which is allowed under our policies.",
+      detectedTopics: ["Gaming", "Sports"]
     }
   },
   {
-    id: "tweet-007",
-    name: "Ryan Cooper",
-    username: "rcooper",
-    profileImage: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    content: "I'm going to destroy everyone who voted for @Politician! You'll all regret it. Watch your backs.",
-    timestamp: "2023-05-15T07:18:00.000Z",
-    status: "rejected",
-    analysis: {
-      categories: [
-        { name: "Harassment", score: 0.85 },
-        { name: "Negativity", score: 0.92 },
-        { name: "Profanity", score: 0.10 },
-        { name: "Threats", score: 0.88 },
-      ]
-    }
-  },
-  {
-    id: "tweet-008",
-    name: "Olivia Parker",
-    username: "oparker",
+    id: "tweet-5",
+    name: "Emma Thompson",
+    username: "emmathompson",
     profileImage: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    content: "Just finished this amazing new sci-fi novel! Highly recommend it to anyone who loves the genre. What are you reading right now?",
-    timestamp: "2023-05-15T15:50:00.000Z",
+    content: "Just watched the latest superhero movie and honestly it was terrible. Such a waste of money and time.",
+    timestamp: "2023-06-14T19:45:00Z",
     status: "approved",
     analysis: {
       categories: [
-        { name: "Harassment", score: 0.00 },
-        { name: "Negativity", score: 0.01 },
-        { name: "Profanity", score: 0.00 },
-        { name: "Threats", score: 0.00 },
-      ]
-    }
-  },
-  {
-    id: "tweet-009",
-    name: "Nicholas Grant",
-    username: "ngrant",
-    profileImage: "https://images.unsplash.com/photo-1520409364224-63400afe26e5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    content: "Why is no one talking about the side effects of this vaccine? My cousin got it and now has serious health issues. Be careful people! #VaccineAlert",
-    timestamp: "2023-05-15T11:27:00.000Z",
-    status: "flagged",
-    analysis: {
-      categories: [
-        { name: "Harassment", score: 0.05 },
-        { name: "Negativity", score: 0.55 },
-        { name: "Profanity", score: 0.00 },
-        { name: "Misinformation", score: 0.75 },
-        { name: "Threats", score: 0.01 },
-      ]
-    }
-  },
-  {
-    id: "tweet-010",
-    name: "Sophie Allen",
-    username: "sallen",
-    profileImage: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    content: "Just launched my new website! It's been months of hard work, but I'm so proud of the result. Check it out: website.com #WebDesign #Launch",
-    image: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-    timestamp: "2023-05-15T17:05:00.000Z",
-    status: "approved",
-    analysis: {
-      categories: [
-        { name: "Harassment", score: 0.00 },
-        { name: "Negativity", score: 0.00 },
-        { name: "Profanity", score: 0.00 },
-        { name: "Threats", score: 0.00 },
-      ]
+        { name: "Harassment", score: 0.15, explanation: "Criticism directed at content, not individuals" },
+        { name: "Negativity", score: 0.65, explanation: "Negative opinion about a creative work" },
+        { name: "Profanity", score: 0.05, explanation: "No profanity detected" },
+        { name: "Threats", score: 0.00, explanation: "No threatening language detected" }
+      ],
+      explanation: "This content expresses a negative opinion about a creative work, which is allowed under our content policies as it's not targeting individuals.",
+      detectedTopics: ["Entertainment", "Movies"]
     }
   }
 ];
 
 export const mockStatistics = {
-  totalTweets: 254,
-  flaggedTweets: 47,
-  approvedTweets: 187,
-  rejectedTweets: 20,
-  avgResponseTime: "2.4 min",
-  responseRate: 94,
-  chartData: [
-    { name: "Mon", flagged: 12, approved: 45, rejected: 2 },
-    { name: "Tue", flagged: 8, approved: 32, rejected: 3 },
-    { name: "Wed", flagged: 10, approved: 38, rejected: 5 },
-    { name: "Thu", flagged: 5, approved: 42, rejected: 2 },
-    { name: "Fri", flagged: 7, approved: 35, rejected: 4 },
-    { name: "Sat", flagged: 2, approved: 15, rejected: 1 },
-    { name: "Sun", flagged: 3, approved: 12, rejected: 3 },
-  ],
-  categories: [
-    { name: "Harassment", count: 18, color: "#ff3b30" },
-    { name: "Misinformation", count: 12, color: "#ffcc00" },
-    { name: "Profanity", count: 9, color: "#ff9500" },
-    { name: "Threats", count: 8, color: "#ff2d55" },
-  ],
+  totalTweets: 1248,
+  approvedTweets: 987,
+  rejectedTweets: 53,
+  flaggedTweets: 208,
+  averageModerationTime: "15s",
 };
