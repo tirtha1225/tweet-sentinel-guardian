@@ -8,6 +8,7 @@ export interface Tweet {
   timestamp: string;
   status: "flagged" | "approved" | "rejected" | "pending";
   image?: string;
+  source?: string;
   analysis: {
     categories: {
       name: string;

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   Select,
   SelectContent,
@@ -22,18 +23,23 @@ interface ModeratorPanelProps {
 
 const ModeratorPanel: React.FC<ModeratorPanelProps> = ({ tweets, onAction }) => {
   const [filter, setFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Filter tweets based on status and search query
+  // Get unique sources from tweets
+  const sources = Array.from(new Set(tweets.map(t => t.source || "manual"))).sort();
+
+  // Filter tweets based on status, source, and search query
   const filteredTweets = tweets.filter((tweet) => {
     const matchesFilter = filter === "all" || tweet.status === filter;
+    const matchesSource = sourceFilter === "all" || (tweet.source || "manual") === sourceFilter;
     const matchesSearch = 
       tweet.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tweet.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tweet.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
+    return matchesFilter && matchesSearch && matchesSource;
   });
 
   // Sort tweets
@@ -103,59 +109,122 @@ const ModeratorPanel: React.FC<ModeratorPanelProps> = ({ tweets, onAction }) => 
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="pt-4 pb-2 flex flex-wrap gap-2">
-                <div className="flex-1 min-w-[200px]">
-                  <Select
-                    value={filter}
-                    onValueChange={setFilter}
-                  >
-                    <SelectTrigger className="w-full h-9 text-sm">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Tweets</SelectItem>
-                      <SelectItem value="flagged">Flagged</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="pt-4 pb-2 space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex-1 min-w-[200px]">
+                    <Select
+                      value={filter}
+                      onValueChange={setFilter}
+                    >
+                      <SelectTrigger className="w-full h-9 text-sm">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="flagged">Flagged</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "px-3 h-9 text-sm",
+                        filter === "all" && "bg-blue-light/10 text-blue border-blue-light"
+                      )}
+                      onClick={() => setFilter("all")}
+                    >
+                      All
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "px-3 h-9 text-sm",
+                        filter === "flagged" && "bg-yellow-light/10 text-yellow-dark border-yellow-DEFAULT"
+                      )}
+                      onClick={() => setFilter("flagged")}
+                    >
+                      Flagged
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "px-3 h-9 text-sm",
+                        filter === "rejected" && "bg-red-light/10 text-red-dark border-red-DEFAULT"
+                      )}
+                      onClick={() => setFilter("rejected")}
+                    >
+                      Rejected
+                    </Button>
+                  </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "px-3 h-9 text-sm",
-                      filter === "all" && "bg-blue-light/10 text-blue border-blue-light"
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex-1 min-w-[200px]">
+                    <Select
+                      value={sourceFilter}
+                      onValueChange={setSourceFilter}
+                    >
+                      <SelectTrigger className="w-full h-9 text-sm">
+                        <SelectValue placeholder="Filter by source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sources</SelectItem>
+                        {sources.map(source => (
+                          <SelectItem key={source} value={source}>
+                            {source.charAt(0).toUpperCase() + source.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "px-3 h-9 text-sm",
+                        sourceFilter === "all" && "bg-blue-light/10 text-blue border-blue-light"
+                      )}
+                      onClick={() => setSourceFilter("all")}
+                    >
+                      All Sources
+                    </Button>
+                    {sources.includes("twitter") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "px-3 h-9 text-sm",
+                          sourceFilter === "twitter" && "bg-blue-500/10 text-blue-500 border-blue-500"
+                        )}
+                        onClick={() => setSourceFilter("twitter")}
+                      >
+                        Twitter
+                      </Button>
                     )}
-                    onClick={() => setFilter("all")}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "px-3 h-9 text-sm",
-                      filter === "flagged" && "bg-yellow-light/10 text-yellow-dark border-yellow-DEFAULT"
+                    {sources.includes("manual") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "px-3 h-9 text-sm",
+                          sourceFilter === "manual" && "bg-purple-500/10 text-purple-500 border-purple-500"
+                        )}
+                        onClick={() => setSourceFilter("manual")}
+                      >
+                        Manual
+                      </Button>
                     )}
-                    onClick={() => setFilter("flagged")}
-                  >
-                    Flagged
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "px-3 h-9 text-sm",
-                      filter === "rejected" && "bg-red-light/10 text-red-dark border-red-DEFAULT"
-                    )}
-                    onClick={() => setFilter("rejected")}
-                  >
-                    Rejected
-                  </Button>
+                  </div>
                 </div>
               </div>
             </motion.div>

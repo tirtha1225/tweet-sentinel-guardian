@@ -5,12 +5,15 @@ import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Header from "@/components/Header";
 import ModeratorPanel from "@/components/ModeratorPanel";
 import StatisticsPanel from "@/components/StatisticsPanel";
+import TwitterConfigPanel from "@/components/TwitterConfigPanel";
 import TransitionLayout from "@/components/TransitionLayout";
 import { moderationService } from "@/lib/moderationService";
+import { twitterApiService } from "@/lib/twitterApiService";
 import { mockStatistics } from "@/lib/mockData";
 import { Tweet } from "@/lib/mockData";
 
@@ -22,6 +25,7 @@ const Index = () => {
   const [newTweetContent, setNewTweetContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState<string>("stats");
 
   useEffect(() => {
     // Load initial tweets
@@ -47,26 +51,16 @@ const Index = () => {
       });
     });
 
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      const randomContent = [
-        "Just had an amazing day at the beach! #sunshine",
-        "This new restaurant is absolutely fantastic! #foodie",
-        "Can't believe how terrible the service was today. Never going back!",
-        "Hey @friend, let's meet up tomorrow for coffee!",
-        "This product is a complete scam. Don't waste your money!"
-      ];
-      
-      // Random chance to process a new tweet
-      if (Math.random() > 0.7) {
-        const randomTweet = randomContent[Math.floor(Math.random() * randomContent.length)];
-        moderationService.processTweet(randomTweet);
-      }
-    }, 30000);
+    // Check if Twitter integration is active
+    const twitterConfig = twitterApiService.getConfig();
+    if (twitterConfig.isActive && twitterConfig.bearerToken && twitterConfig.keywords.length > 0) {
+      // Auto-connect to Twitter if active
+      twitterApiService.connect();
+    }
 
     return () => {
       unsubscribe();
-      clearInterval(interval);
+      twitterApiService.disconnect();
     };
   }, []);
 
@@ -151,7 +145,7 @@ const Index = () => {
           >
             <h1 className="text-3xl font-bold tracking-tight mb-2">Content Moderation</h1>
             <p className="text-neutral-500 dark:text-neutral-400 max-w-3xl">
-              Real-time moderation system powered by advanced AI to automatically detect and filter inappropriate content.
+              Real-time moderation system powered by advanced AI to automatically detect and filter inappropriate content from Twitter and other sources.
             </p>
           </motion.div>
           
@@ -236,7 +230,23 @@ const Index = () => {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="h-[calc(100vh-320px)] min-h-[500px] lg:block"
             >
-              <StatisticsPanel stats={stats} />
+              <Tabs 
+                defaultValue="stats" 
+                value={rightPanelTab} 
+                onValueChange={setRightPanelTab}
+                className="h-full flex flex-col"
+              >
+                <TabsList className="grid grid-cols-2 mb-4">
+                  <TabsTrigger value="stats">Statistics</TabsTrigger>
+                  <TabsTrigger value="twitter">Twitter API</TabsTrigger>
+                </TabsList>
+                <TabsContent value="stats" className="flex-1 m-0 h-full">
+                  <StatisticsPanel stats={stats} />
+                </TabsContent>
+                <TabsContent value="twitter" className="flex-1 m-0 h-full">
+                  <TwitterConfigPanel />
+                </TabsContent>
+              </Tabs>
             </motion.div>
           </div>
         </main>

@@ -1,21 +1,13 @@
 
 import React, { useState } from "react";
-import { Check, X, AlertTriangle, Flag, ThumbsUp, Info, BookOpen, MessageSquare, HelpCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import { CheckCircle, XCircle, Flag, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tweet } from "@/lib/mockData";
-import {
-  Alert,
-  AlertTitle,
-  AlertDescription,
-} from "@/components/ui/alert";
 
 interface TweetCardProps {
   tweet: Tweet;
@@ -23,267 +15,247 @@ interface TweetCardProps {
 }
 
 const TweetCard: React.FC<TweetCardProps> = ({ tweet, onAction }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "flagged":
-        return "bg-yellow-light/20 text-yellow-DEFAULT border border-yellow-DEFAULT/20";
-      case "approved":
-        return "bg-green-light/20 text-green-DEFAULT border border-green-DEFAULT/20";
-      case "rejected":
-        return "bg-red-light/20 text-red-DEFAULT border border-red-DEFAULT/20";
-      default:
-        return "bg-neutral-200 text-neutral-600 border border-neutral-300";
+  const [expanded, setExpanded] = useState(false);
+  const formattedDate = new Date(tweet.timestamp).toLocaleString();
+  
+  const handleApprove = () => onAction(tweet.id, "approve");
+  const handleReject = () => onAction(tweet.id, "reject");
+  const handleFlag = () => onAction(tweet.id, "flag");
+  
+  const statusColors = {
+    approved: "bg-green-500/10 text-green-600 border-green-500",
+    rejected: "bg-red-500/10 text-red-600 border-red-500",
+    flagged: "bg-yellow-500/10 text-yellow-600 border-yellow-500",
+    pending: "bg-blue-500/10 text-blue-600 border-blue-500"
+  };
+  
+  const getSourceBadge = () => {
+    if (!tweet.source || tweet.source === "manual") {
+      return (
+        <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500">
+          Manual
+        </Badge>
+      );
     }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "flagged":
-        return <AlertTriangle className="h-3 w-3" />;
-      case "approved":
-        return <Check className="h-3 w-3" />;
-      case "rejected":
-        return <X className="h-3 w-3" />;
-      default:
-        return <Info className="h-3 w-3" />;
+    
+    if (tweet.source === "twitter") {
+      return (
+        <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500">
+          Twitter
+        </Badge>
+      );
     }
+    
+    return (
+      <Badge variant="outline">
+        {tweet.source}
+      </Badge>
+    );
   };
-
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
-  };
-
-  const getCategoryColorClass = (score: number) => {
-    if (score > 0.7) return "bg-red-DEFAULT";
-    if (score > 0.4) return "bg-yellow-DEFAULT";
-    return "bg-green-DEFAULT";
-  };
-
+  
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={cn(
-        "premium-card p-4 mb-4 transition-all duration-300",
-        isExpanded ? "ring-2 ring-blue-light/30" : ""
-      )}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 p-4 mb-4 relative"
     >
-      <div className="flex items-start space-x-3">
-        <div className="h-10 w-10 rounded-full overflow-hidden bg-neutral-200 flex-shrink-0">
-          <img
-            src={tweet.profileImage}
-            alt={tweet.username}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        </div>
-        
+      <div className="flex items-start">
+        <img
+          src={tweet.profileImage}
+          alt={`${tweet.name}'s profile`}
+          className="w-10 h-10 rounded-full mr-3 object-cover"
+        />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center mb-1">
-            <p className="font-medium text-sm">{tweet.name}</p>
-            <span className="mx-1 text-neutral-400">·</span>
-            <p className="text-neutral-500 text-sm">@{tweet.username}</p>
-            <div className="ml-auto">
-              <span className={cn("status-chip", getStatusColor(tweet.status))}>
-                {getStatusIcon(tweet.status)}
-                <span className="capitalize">{tweet.status}</span>
-              </span>
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <span className="font-medium text-sm">{tweet.name}</span>
+              <span className="text-neutral-500 text-xs ml-1">@{tweet.username}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {getSourceBadge()}
+              <Badge variant="outline" className={statusColors[tweet.status]}>
+                {tweet.status.charAt(0).toUpperCase() + tweet.status.slice(1)}
+              </Badge>
             </div>
           </div>
-          
-          <p className="text-sm mb-2">{tweet.content}</p>
+          <p className="text-sm mb-2 break-words">{tweet.content}</p>
           
           {tweet.image && (
-            <div className="rounded-lg overflow-hidden mb-3 max-h-48">
-              <img
-                src={tweet.image}
-                alt="Tweet media"
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            </div>
+            <img 
+              src={tweet.image} 
+              alt="Tweet media" 
+              className="rounded-md w-full h-auto max-h-48 object-cover mb-2"
+            />
           )}
           
           <div className="flex items-center text-xs text-neutral-500">
-            <span>{new Date(tweet.timestamp).toLocaleString()}</span>
-            <span className="mx-1">·</span>
-            <button 
-              onClick={toggleExpand} 
-              className="text-blue hover:underline"
-            >
-              {isExpanded ? "Hide details" : "View details"}
-            </button>
+            <span>{formattedDate}</span>
           </div>
-          
-          {isExpanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-700"
-            >
-              {/* AI Explanation */}
-              {tweet.analysis.explanation && (
-                <Alert className="mb-4 bg-blue-light/5 border-blue-light/20">
-                  <HelpCircle className="h-4 w-4 text-blue-light" />
-                  <AlertTitle className="text-sm font-medium">AI Analysis</AlertTitle>
-                  <AlertDescription className="text-xs">
-                    {tweet.analysis.explanation}
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              <Accordion type="single" collapsible className="mb-3">
-                {/* Content Analysis */}
-                <AccordionItem value="content-analysis">
-                  <AccordionTrigger className="text-xs font-medium py-2">
-                    <div className="flex items-center">
-                      <MessageSquare className="h-3.5 w-3.5 mr-2 text-blue-light" />
-                      Content Analysis
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2 text-sm">
-                      {tweet.analysis.categories.map((category, index) => (
-                        <div key={index} className="space-y-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-neutral-600 dark:text-neutral-400">{category.name}</span>
-                            <div className="flex items-center">
-                              <div className="w-32 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden mr-2">
-                                <div 
-                                  className={cn(
-                                    "h-full",
-                                    getCategoryColorClass(category.score)
-                                  )}
-                                  style={{ width: `${category.score * 100}%` }}
-                                />
-                              </div>
-                              <span className="text-xs">{Math.round(category.score * 100)}%</span>
-                            </div>
-                          </div>
-                          {category.explanation && (
-                            <p className="text-xs text-neutral-500 pl-4 border-l-2 border-neutral-200">
-                              {category.explanation}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-                
-                {/* Policy References */}
-                {tweet.analysis.policyReferences && tweet.analysis.policyReferences.length > 0 && (
-                  <AccordionItem value="policy-references">
-                    <AccordionTrigger className="text-xs font-medium py-2">
-                      <div className="flex items-center">
-                        <BookOpen className="h-3.5 w-3.5 mr-2 text-blue-light" />
-                        Related Policies
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-3">
-                        {tweet.analysis.policyReferences.map((policy, index) => (
-                          <div key={index} className="bg-neutral-50 dark:bg-neutral-800/50 p-2 rounded-md border border-neutral-200 dark:border-neutral-700">
-                            <div className="flex items-center justify-between mb-1">
-                              <h4 className="text-xs font-medium">{policy.policyName}</h4>
-                              <span className="text-xs bg-blue-light/10 text-blue-light px-1.5 py-0.5 rounded-full">
-                                {Math.round(policy.relevance * 100)}% match
-                              </span>
-                            </div>
-                            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                              {policy.description}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
-                
-                {/* Suggested Actions */}
-                {tweet.analysis.suggestedActions && tweet.analysis.suggestedActions.length > 0 && (
-                  <AccordionItem value="suggested-actions">
-                    <AccordionTrigger className="text-xs font-medium py-2">
-                      <div className="flex items-center">
-                        <Info className="h-3.5 w-3.5 mr-2 text-blue-light" />
-                        Suggested Improvements
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <ul className="list-disc pl-5 space-y-1">
-                        {tweet.analysis.suggestedActions.map((action, index) => (
-                          <li key={index} className="text-xs text-neutral-600 dark:text-neutral-400">
-                            {action}
-                          </li>
-                        ))}
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
-                
-                {/* Topics */}
-                {tweet.analysis.detectedTopics && tweet.analysis.detectedTopics.length > 0 && (
-                  <AccordionItem value="topics">
-                    <AccordionTrigger className="text-xs font-medium py-2">
-                      <div className="flex items-center">
-                        <MessageSquare className="h-3.5 w-3.5 mr-2 text-blue-light" />
-                        Detected Topics
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="flex flex-wrap gap-1">
-                        {tweet.analysis.detectedTopics.map((topic, index) => (
-                          <span 
-                            key={index} 
-                            className="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-full text-neutral-600 dark:text-neutral-400"
-                          >
-                            {topic}
-                          </span>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
-              </Accordion>
-              
-              <div className="flex items-center justify-end space-x-2 mt-3">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-green-DEFAULT border-green-DEFAULT/30 hover:bg-green-DEFAULT/10"
-                  onClick={() => onAction(tweet.id, "approve")}
-                >
-                  <Check className="h-4 w-4 mr-1" />
-                  Approve
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-yellow-DEFAULT border-yellow-DEFAULT/30 hover:bg-yellow-DEFAULT/10"
-                  onClick={() => onAction(tweet.id, "flag")}
-                >
-                  <Flag className="h-4 w-4 mr-1" />
-                  Flag
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-red-DEFAULT border-red-DEFAULT/30 hover:bg-red-DEFAULT/10"
-                  onClick={() => onAction(tweet.id, "reject")}
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  Reject
-                </Button>
-              </div>
-            </motion.div>
-          )}
         </div>
       </div>
+      
+      <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-700">
+        <div className="flex justify-between items-center">
+          <div className="flex space-x-1">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className={cn(
+                "text-xs",
+                tweet.status === "approved" && "bg-green-500/10 text-green-600 hover:text-green-700 hover:bg-green-500/20"
+              )}
+              onClick={handleApprove}
+              disabled={tweet.status === "approved"}
+            >
+              <CheckCircle className="h-3.5 w-3.5 mr-1" />
+              Approve
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className={cn(
+                "text-xs",
+                tweet.status === "rejected" && "bg-red-500/10 text-red-600 hover:text-red-700 hover:bg-red-500/20"
+              )}
+              onClick={handleReject}
+              disabled={tweet.status === "rejected"}
+            >
+              <XCircle className="h-3.5 w-3.5 mr-1" />
+              Reject
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className={cn(
+                "text-xs",
+                tweet.status === "flagged" && "bg-yellow-500/10 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-500/20"
+              )}
+              onClick={handleFlag}
+              disabled={tweet.status === "flagged"}
+            >
+              <Flag className="h-3.5 w-3.5 mr-1" />
+              Flag
+            </Button>
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs"
+          >
+            Analysis
+            {expanded ? (
+              <ChevronUp className="ml-1 h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="ml-1 h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
+      </div>
+      
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-3 pb-1 space-y-3 text-sm">
+              {tweet.analysis.explanation && (
+                <div>
+                  <h4 className="font-medium text-xs uppercase text-neutral-500 mb-1">Analysis</h4>
+                  <p className="text-sm bg-neutral-100 dark:bg-neutral-900 p-2 rounded-md">
+                    {tweet.analysis.explanation}
+                  </p>
+                </div>
+              )}
+              
+              <div>
+                <h4 className="font-medium text-xs uppercase text-neutral-500 mb-1">Content Categories</h4>
+                <div className="flex flex-wrap gap-2">
+                  {tweet.analysis.categories.map((category, index) => (
+                    <TooltipProvider key={index}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="relative h-7 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden border border-neutral-300 dark:border-neutral-700 flex items-center pr-2">
+                            <div
+                              className={`h-full ${
+                                category.score > 0.7 ? "bg-red-500" :
+                                category.score > 0.5 ? "bg-yellow-500" :
+                                category.score > 0.3 ? "bg-blue-500" : "bg-green-500"
+                              }`}
+                              style={{ width: `${Math.max(category.score * 100, 15)}%` }}
+                            />
+                            <span className="ml-2 text-xs absolute left-2 text-white drop-shadow-md">
+                              {category.name}
+                            </span>
+                            <span className="ml-auto text-xs font-mono">
+                              {Math.round(category.score * 100)}%
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{category.explanation || `${category.name} score: ${category.score}`}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+              </div>
+              
+              {tweet.analysis.detectedTopics && tweet.analysis.detectedTopics.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-xs uppercase text-neutral-500 mb-1">Detected Topics</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {tweet.analysis.detectedTopics.map((topic, index) => (
+                      <Badge key={index} variant="secondary" className="bg-blue-500/10 text-blue-600 hover:text-blue-700">
+                        {topic}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {tweet.analysis.policyReferences && tweet.analysis.policyReferences.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-xs uppercase text-neutral-500 mb-1">Policy References</h4>
+                  <div className="space-y-2">
+                    {tweet.analysis.policyReferences.map((policy, index) => (
+                      <div key={index} className="bg-neutral-100 dark:bg-neutral-900 p-2 rounded-md">
+                        <div className="flex justify-between items-center">
+                          <h5 className="font-medium text-xs">{policy.policyName}</h5>
+                          <span className="text-xs bg-neutral-200 dark:bg-neutral-800 px-1.5 py-0.5 rounded-full">
+                            Relevance: {Math.round(policy.relevance * 100)}%
+                          </span>
+                        </div>
+                        <p className="text-xs mt-1">{policy.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {tweet.analysis.suggestedActions && tweet.analysis.suggestedActions.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-xs uppercase text-neutral-500 mb-1 flex items-center">
+                    <AlertTriangle className="h-3 w-3 mr-1 text-yellow-500" />
+                    Suggested Actions
+                  </h4>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {tweet.analysis.suggestedActions.map((action, index) => (
+                      <li key={index} className="text-xs">{action}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

@@ -2,6 +2,13 @@
 import { Tweet, mockTweets } from './mockData';
 import { analyzeTweetContent, LLMAnalysisResult } from './llmService';
 
+interface TweetSource {
+  name?: string;
+  username?: string;
+  profileImage?: string;
+  source?: string;
+}
+
 // This would typically connect to an API or backend service
 // For demo purposes, we'll use the mock data
 
@@ -19,20 +26,26 @@ class ModerationService {
     return this.tweets.filter(tweet => tweet.status === status);
   }
 
+  // Get tweets by source
+  getTweetsBySource(source: string): Tweet[] {
+    return this.tweets.filter(tweet => tweet.source === source);
+  }
+
   // Process a new tweet with LLM analysis
-  async processTweet(tweetContent: string): Promise<Tweet> {
+  async processTweet(tweetContent: string, source?: TweetSource): Promise<Tweet> {
     // Get LLM analysis
     const llmAnalysis = await analyzeTweetContent(tweetContent);
     
     // Create new tweet with enhanced analysis
     const newTweet: Tweet = {
       id: `tweet-${Date.now()}`,
-      name: "Test User",
-      username: "testuser",
-      profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+      name: source?.name || "Test User",
+      username: source?.username || "testuser",
+      profileImage: source?.profileImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
       content: tweetContent,
       timestamp: new Date().toISOString(),
-      status: llmAnalysis.decision,
+      status: llmAnalysis.decision as "flagged" | "approved" | "rejected" | "pending",
+      source: source?.source || "manual",
       analysis: {
         categories: llmAnalysis.categories,
         explanation: llmAnalysis.reasoning,
