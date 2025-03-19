@@ -1,22 +1,23 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { PlayCircle, StopCircle, Plus, X, Globe } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { twitterApiService } from "@/lib/twitterApiService";
+
+// Import our new components
+import KeywordManager from "@/components/twitter/KeywordManager";
+import RegionSelector from "@/components/twitter/RegionSelector";
+import TwitterCredentials from "@/components/twitter/TwitterCredentials";
+import ConnectionStatus from "@/components/twitter/ConnectionStatus";
+import ControlButtons from "@/components/twitter/ControlButtons";
 
 const TwitterConfigPanel: React.FC = () => {
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
   const [bearerToken, setBearerToken] = useState("");
-  const [keyword, setKeyword] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(false);
   const [region, setRegion] = useState("us");
@@ -41,19 +42,14 @@ const TwitterConfigPanel: React.FC = () => {
     };
   }, []);
 
-  const handleAddKeyword = () => {
-    if (keyword.trim() && !keywords.includes(keyword.trim())) {
-      const newKeywords = [...keywords, keyword.trim()];
-      setKeywords(newKeywords);
-      twitterApiService.setConfig({ keywords: newKeywords });
-      setKeyword("");
-    }
-  };
-
-  const handleRemoveKeyword = (keywordToRemove: string) => {
-    const newKeywords = keywords.filter(k => k !== keywordToRemove);
+  const handleKeywordsChange = (newKeywords: string[]) => {
     setKeywords(newKeywords);
     twitterApiService.setConfig({ keywords: newKeywords });
+  };
+
+  const handleRegionChange = (value: string) => {
+    setRegion(value);
+    twitterApiService.setConfig({ region: value });
   };
 
   const handleSaveConfig = () => {
@@ -141,10 +137,7 @@ const TwitterConfigPanel: React.FC = () => {
     }
   };
 
-  const handleRegionChange = (value: string) => {
-    setRegion(value);
-    twitterApiService.setConfig({ region: value });
-  };
+  const canConnect = bearerToken !== "" && keywords.length > 0;
 
   return (
     <div className="glass-panel p-6 h-full flex flex-col">
@@ -160,132 +153,33 @@ const TwitterConfigPanel: React.FC = () => {
           <Label htmlFor="twitter-active">Enable Twitter Monitoring</Label>
         </div>
         
-        <Badge 
-          variant="outline" 
-          className={`
-            px-3 py-1 
-            ${connectionStatus === "connected" ? "bg-green-500/10 text-green-600 border-green-600" : 
-              connectionStatus === "connecting" ? "bg-yellow-500/10 text-yellow-600 border-yellow-600" :
-              connectionStatus === "error" ? "bg-red-500/10 text-red-600 border-red-600" :
-              "bg-neutral-200 text-neutral-600 border-neutral-400"}
-          `}
-        >
-          {connectionStatus === "connected" ? "Connected" :
-           connectionStatus === "connecting" ? "Connecting..." :
-           connectionStatus === "error" ? "Connection Error" :
-           "Disconnected"}
-        </Badge>
+        <ConnectionStatus status={connectionStatus as any} />
       </div>
       
       <div className="space-y-4 mb-6">
-        <div>
-          <label className="text-sm font-medium mb-1 block">Keywords to Monitor</label>
-          <div className="flex space-x-2 mb-2">
-            <Input
-              type="text"
-              placeholder="Add keyword or hashtag..."
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleAddKeyword();
-                }
-              }}
-              className="flex-1"
-            />
-            <Button 
-              type="button"
-              size="icon"
-              onClick={handleAddKeyword}
-              disabled={!keyword.trim()}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="flex flex-wrap gap-2 mb-4">
-            {keywords.map((kw, index) => (
-              <Badge 
-                key={index} 
-                variant="secondary"
-                className="flex items-center space-x-1 py-1"
-              >
-                <span>{kw}</span>
-                <button 
-                  onClick={() => handleRemoveKeyword(kw)} 
-                  className="ml-1 h-4 w-4 rounded-full inline-flex items-center justify-center"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-            {keywords.length === 0 && (
-              <p className="text-sm text-neutral-500">No keywords added. Add keywords to monitor.</p>
-            )}
-          </div>
-        </div>
+        <KeywordManager 
+          keywords={keywords} 
+          onKeywordsChange={handleKeywordsChange} 
+        />
         
-        <div className="mb-4">
-          <label className="text-sm font-medium mb-1 block">Region Filter</label>
-          <div className="flex items-center space-x-2">
-            <Globe className="h-4 w-4 text-neutral-500" />
-            <Select value={region} onValueChange={handleRegionChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select region" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="us">United States</SelectItem>
-                <SelectItem value="gb">United Kingdom</SelectItem>
-                <SelectItem value="ca">Canada</SelectItem>
-                <SelectItem value="au">Australia</SelectItem>
-                <SelectItem value="">Global (No filter)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="text-xs text-neutral-500 mt-1">Filter tweets by region (uses Twitter's place_country parameter)</p>
-        </div>
+        <RegionSelector 
+          region={region} 
+          onRegionChange={handleRegionChange} 
+        />
         
-        <div>
-          <label className="text-sm font-medium mb-1 block">Twitter API Bearer Token</label>
-          <Input
-            type="password"
-            placeholder="Enter your Twitter API Bearer Token"
-            value={bearerToken}
-            onChange={(e) => setBearerToken(e.target.value)}
-            className="mb-1"
-          />
-          <p className="text-xs text-neutral-500">Required for connecting to Twitter's API.</p>
-        </div>
+        <TwitterCredentials 
+          bearerToken={bearerToken} 
+          onBearerTokenChange={setBearerToken} 
+        />
       </div>
       
-      <div className="flex justify-between mt-auto pt-4 border-t border-neutral-200 dark:border-neutral-800">
-        <Button
-          variant="outline"
-          onClick={handleSaveConfig}
-          disabled={isSubmitting}
-        >
-          Save Configuration
-        </Button>
-        
-        <Button
-          onClick={handleToggleConnection}
-          disabled={connectionStatus === "connecting" || !bearerToken || keywords.length === 0}
-          className={connectionStatus === "connected" ? "bg-red-500 hover:bg-red-600" : "bg-blue-light hover:bg-blue-dark"}
-        >
-          {connectionStatus === "connected" ? (
-            <>
-              <StopCircle className="mr-2 h-4 w-4" />
-              Disconnect
-            </>
-          ) : (
-            <>
-              <PlayCircle className="mr-2 h-4 w-4" />
-              Connect
-            </>
-          )}
-        </Button>
-      </div>
+      <ControlButtons 
+        connectionStatus={connectionStatus}
+        onSaveConfig={handleSaveConfig}
+        onToggleConnection={handleToggleConnection}
+        isSubmitting={isSubmitting}
+        canConnect={canConnect}
+      />
     </div>
   );
 };
