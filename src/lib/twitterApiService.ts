@@ -8,6 +8,7 @@ interface TwitterApiConfig {
   bearerToken: string;
   keywords: string[];
   isActive: boolean;
+  region?: string;
 }
 
 class TwitterApiService {
@@ -16,7 +17,8 @@ class TwitterApiService {
     apiSecret: '',
     bearerToken: '',
     keywords: [],
-    isActive: false
+    isActive: false,
+    region: 'us'
   };
   
   private streamConnection: EventSource | null = null;
@@ -66,31 +68,31 @@ class TwitterApiService {
     this.connectionStatus = 'connecting';
     this.notifyListeners(this.connectionStatus);
     
-    // In a real implementation, we would use the Twitter API v2 filtered stream endpoint
-    // For demo purposes, we'll simulate a connection with mock data
-    
     try {
-      // Simulate connecting to Twitter stream
       console.log('Connecting to Twitter API with keywords:', this.config.keywords);
       
-      // We're simulating a streaming connection with periodic updates
-      // In a real app, you would use the Twitter API's streaming endpoints
-      const intervalId = setInterval(() => {
-        if (this.connectionStatus !== 'connected' && this.connectionStatus !== 'connecting') {
-          clearInterval(intervalId);
-          return;
-        }
-        
-        // Generate a random tweet that contains one of our keywords
-        this.processMockTweet();
-      }, 5000); // Generate a new tweet every 5 seconds
+      // Clear any existing connection
+      if (this.streamConnection) {
+        this.streamConnection.close();
+      }
       
-      // Set connection status after a short delay to simulate connecting
-      setTimeout(() => {
-        this.connectionStatus = 'connected';
+      // In real production code, we would use a proper Twitter API library
+      // For now, we'll use a simplified approach with the Twitter API v2
+      
+      // First, set up filtered stream rules with our keywords
+      const rulesResponse = await this.setupStreamRules();
+      if (!rulesResponse) {
+        this.connectionStatus = 'error';
         this.notifyListeners(this.connectionStatus);
-        console.log('Connected to Twitter stream');
-      }, 1500);
+        return false;
+      }
+      
+      // Connect to the stream
+      await this.connectToStream();
+      
+      this.connectionStatus = 'connected';
+      this.notifyListeners(this.connectionStatus);
+      console.log('Connected to Twitter stream');
       
       return true;
     } catch (error) {
@@ -99,6 +101,120 @@ class TwitterApiService {
       this.notifyListeners(this.connectionStatus);
       return false;
     }
+  }
+  
+  // Set up stream rules based on keywords
+  private async setupStreamRules(): Promise<boolean> {
+    try {
+      // First, get and delete any existing rules
+      const rulesUrl = 'https://api.twitter.com/2/tweets/search/stream/rules';
+      
+      const existingRulesResponse = await fetch(rulesUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.config.bearerToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!existingRulesResponse.ok) {
+        throw new Error(`Failed to get existing rules: ${existingRulesResponse.statusText}`);
+      }
+      
+      const existingRules = await existingRulesResponse.json();
+      
+      // Delete existing rules if there are any
+      if (existingRules.data && existingRules.data.length > 0) {
+        const ids = existingRules.data.map((rule: any) => rule.id);
+        
+        const deleteResponse = await fetch(rulesUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.config.bearerToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            delete: { ids }
+          }),
+        });
+        
+        if (!deleteResponse.ok) {
+          throw new Error(`Failed to delete existing rules: ${deleteResponse.statusText}`);
+        }
+      }
+      
+      // Add new rules based on keywords
+      const rules = this.config.keywords.map(keyword => ({
+        value: keyword + (this.config.region ? ` place_country:${this.config.region}` : ''),
+        tag: `keyword-${keyword}`
+      }));
+      
+      const addResponse = await fetch(rulesUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.config.bearerToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          add: rules
+        }),
+      });
+      
+      if (!addResponse.ok) {
+        throw new Error(`Failed to add stream rules: ${addResponse.statusText}`);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error setting up stream rules:', error);
+      return false;
+    }
+  }
+  
+  // Connect to the filtered stream
+  private async connectToStream(): Promise<void> {
+    const streamUrl = 'https://api.twitter.com/2/tweets/search/stream?tweet.fields=created_at&expansions=author_id&user.fields=name,username,profile_image_url';
+    
+    // Using EventSource for the stream connection
+    this.streamConnection = new EventSource(streamUrl, {
+      headers: {
+        'Authorization': `Bearer ${this.config.bearerToken}`
+      }
+    } as any);
+    
+    this.streamConnection.onopen = () => {
+      console.log('Stream connection opened');
+    };
+    
+    this.streamConnection.onerror = (event) => {
+      console.error('Stream connection error:', event);
+      this.connectionStatus = 'error';
+      this.notifyListeners(this.connectionStatus);
+    };
+    
+    this.streamConnection.onmessage = async (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('Received tweet:', data);
+        
+        if (!data || !data.data) return;
+        
+        const tweet = data.data;
+        const user = data.includes?.users?.find((u: any) => u.id === tweet.author_id);
+        
+        if (!user) return;
+        
+        // Process this tweet through our moderation service
+        await moderationService.processTweet(tweet.text, {
+          name: user.name,
+          username: user.username,
+          profileImage: user.profile_image_url || "https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png",
+          source: 'twitter'
+        });
+      } catch (error) {
+        console.error('Error processing tweet:', error);
+      }
+    };
   }
   
   disconnect(): void {
@@ -112,7 +228,21 @@ class TwitterApiService {
     console.log('Disconnected from Twitter stream');
   }
   
-  // Generate a mock tweet that includes one of our keywords
+  // For simulation/fallback when real API connection fails
+  simulateTweets(): void {
+    if (!this.config.isActive || !this.config.keywords.length) return;
+    
+    const intervalId = setInterval(() => {
+      if (this.connectionStatus !== 'connected') {
+        clearInterval(intervalId);
+        return;
+      }
+      
+      this.processMockTweet();
+    }, 5000);
+  }
+  
+  // Generate a mock tweet that includes one of our keywords (for simulation)
   private processMockTweet(): void {
     if (!this.config.keywords.length || !this.config.isActive) return;
     

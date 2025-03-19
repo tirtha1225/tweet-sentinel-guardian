@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { PlayCircle, StopCircle, Plus, X } from "lucide-react";
+import { PlayCircle, StopCircle, Plus, X, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { twitterApiService } from "@/lib/twitterApiService";
 
 const TwitterConfigPanel: React.FC = () => {
@@ -18,6 +19,7 @@ const TwitterConfigPanel: React.FC = () => {
   const [keyword, setKeyword] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(false);
+  const [region, setRegion] = useState("us");
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -27,6 +29,7 @@ const TwitterConfigPanel: React.FC = () => {
     setBearerToken(config.bearerToken);
     setKeywords(config.keywords);
     setIsActive(config.isActive);
+    setRegion(config.region || "us");
     
     // Subscribe to status updates
     const unsubscribe = twitterApiService.subscribe((status) => {
@@ -62,7 +65,8 @@ const TwitterConfigPanel: React.FC = () => {
         apiSecret,
         bearerToken,
         keywords,
-        isActive
+        isActive,
+        region
       });
       
       toast({
@@ -121,6 +125,8 @@ const TwitterConfigPanel: React.FC = () => {
           variant: "destructive",
           duration: 3000,
         });
+        // Fall back to simulation if real connection fails
+        twitterApiService.simulateTweets();
       }
     }
   };
@@ -133,6 +139,11 @@ const TwitterConfigPanel: React.FC = () => {
       // Automatically connect when activating
       handleToggleConnection();
     }
+  };
+
+  const handleRegionChange = (value: string) => {
+    setRegion(value);
+    twitterApiService.setConfig({ region: value });
   };
 
   return (
@@ -213,6 +224,26 @@ const TwitterConfigPanel: React.FC = () => {
               <p className="text-sm text-neutral-500">No keywords added. Add keywords to monitor.</p>
             )}
           </div>
+        </div>
+        
+        <div className="mb-4">
+          <label className="text-sm font-medium mb-1 block">Region Filter</label>
+          <div className="flex items-center space-x-2">
+            <Globe className="h-4 w-4 text-neutral-500" />
+            <Select value={region} onValueChange={handleRegionChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="us">United States</SelectItem>
+                <SelectItem value="gb">United Kingdom</SelectItem>
+                <SelectItem value="ca">Canada</SelectItem>
+                <SelectItem value="au">Australia</SelectItem>
+                <SelectItem value="">Global (No filter)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-xs text-neutral-500 mt-1">Filter tweets by region (uses Twitter's place_country parameter)</p>
         </div>
         
         <div>
