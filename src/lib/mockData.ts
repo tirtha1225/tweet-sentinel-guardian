@@ -1,3 +1,4 @@
+
 export interface Tweet {
   id: string;
   name: string;
@@ -151,10 +152,27 @@ export const mockTweets: Tweet[] = [
   }
 ];
 
+// Updated to match the StatisticsPanel requirements
 export const mockStatistics = {
   totalTweets: 1248,
   approvedTweets: 987,
   rejectedTweets: 53,
   flaggedTweets: 208,
-  averageModerationTime: "15s",
+  avgResponseTime: "15s", // Renamed from averageModerationTime
+  responseRate: 98, // Added missing property
+  chartData: [
+    { name: "Mon", flagged: 12, approved: 58, rejected: 3 },
+    { name: "Tue", flagged: 19, approved: 65, rejected: 7 },
+    { name: "Wed", flagged: 15, approved: 75, rejected: 5 },
+    { name: "Thu", flagged: 25, approved: 62, rejected: 9 },
+    { name: "Fri", flagged: 18, approved: 80, rejected: 8 },
+    { name: "Sat", flagged: 14, approved: 73, rejected: 4 },
+    { name: "Sun", flagged: 10, approved: 68, rejected: 2 }
+  ], // Added missing property
+  categories: [
+    { name: "Harassment", count: 87, color: "#ff3b30" },
+    { name: "Threats", count: 32, color: "#ff9500" },
+    { name: "Profanity", count: 56, color: "#ffcc00" },
+    { name: "Misinformation", count: 33, color: "#5856d6" }
+  ] // Added missing property
 };

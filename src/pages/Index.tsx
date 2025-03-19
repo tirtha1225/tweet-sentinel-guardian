@@ -36,13 +36,14 @@ const Index = () => {
       const approved = moderationService.getTweetsByStatus("approved").length;
       const rejected = moderationService.getTweetsByStatus("rejected").length;
       const flagged = moderationService.getTweetsByStatus("flagged").length;
+      const pending = moderationService.getTweetsByStatus("pending").length;
       
       setStats({
         ...stats,
         approvedTweets: approved,
         rejectedTweets: rejected,
         flaggedTweets: flagged,
-        totalTweets: approved + rejected + flagged + moderationService.getTweetsByStatus("pending").length,
+        totalTweets: approved + rejected + flagged + pending,
       });
     });
 
