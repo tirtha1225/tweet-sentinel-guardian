@@ -1,186 +1,145 @@
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { Card } from "@/components/ui/card";
 import { twitterApiService } from "@/lib/twitterApiService";
-
-// Import our new components
-import KeywordManager from "@/components/twitter/KeywordManager";
+import { openaiService } from "@/lib/openaiService";
 import RegionSelector from "@/components/twitter/RegionSelector";
 import TwitterCredentials from "@/components/twitter/TwitterCredentials";
+import KeywordManager from "@/components/twitter/KeywordManager";
 import ConnectionStatus from "@/components/twitter/ConnectionStatus";
 import ControlButtons from "@/components/twitter/ControlButtons";
+import OpenAICredentials from "@/components/OpenAICredentials";
+import { Separator } from "@/components/ui/separator";
 
-const TwitterConfigPanel: React.FC = () => {
-  const { toast } = useToast();
-  const [apiKey, setApiKey] = useState("");
-  const [apiSecret, setApiSecret] = useState("");
+const TwitterConfigPanel = () => {
   const [bearerToken, setBearerToken] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
-  const [isActive, setIsActive] = useState(false);
+  const [newKeyword, setNewKeyword] = useState("");
   const [region, setRegion] = useState("us");
-  const [connectionStatus, setConnectionStatus] = useState("disconnected");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [isConnected, setIsConnected] = useState(false);
+  const [openaiKey, setOpenaiKey] = useState("");
+  
   useEffect(() => {
-    // Load config from service
+    // Load Twitter API configuration
     const config = twitterApiService.getConfig();
-    setBearerToken(config.bearerToken);
-    setKeywords(config.keywords);
-    setIsActive(config.isActive);
+    setBearerToken(config.bearerToken || "");
+    setKeywords(config.keywords || []);
     setRegion(config.region || "us");
+    setIsConnected(config.isActive || false);
     
-    // Subscribe to status updates
-    const unsubscribe = twitterApiService.subscribe((status) => {
-      setConnectionStatus(status);
+    // Load OpenAI API key
+    const apiKey = openaiService.getApiKey();
+    setOpenaiKey(apiKey || "");
+    
+    // Subscribe to connection status changes
+    const unsubscribe = twitterApiService.subscribeToConnectionStatus((status) => {
+      setIsConnected(status);
     });
     
     return () => {
       unsubscribe();
     };
   }, []);
-
-  const handleKeywordsChange = (newKeywords: string[]) => {
-    setKeywords(newKeywords);
-    twitterApiService.setConfig({ keywords: newKeywords });
+  
+  const handleBearerTokenChange = (token: string) => {
+    setBearerToken(token);
+    twitterApiService.updateConfig({ bearerToken: token });
   };
-
-  const handleRegionChange = (value: string) => {
-    setRegion(value);
-    twitterApiService.setConfig({ region: value });
+  
+  const handleOpenAIKeyChange = (key: string) => {
+    setOpenaiKey(key);
+    openaiService.setApiKey(key);
   };
-
-  const handleSaveConfig = () => {
-    setIsSubmitting(true);
-    
-    try {
-      twitterApiService.setConfig({
-        apiKey,
-        apiSecret,
-        bearerToken,
-        keywords,
-        isActive,
-        region
-      });
-      
-      toast({
-        title: "Configuration saved",
-        description: "Twitter API configuration has been updated.",
-        duration: 3000,
-      });
-      
-      // Clear sensitive fields
-      setApiKey("");
-      setApiSecret("");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save configuration.",
-        variant: "destructive",
-        duration: 3000,
-      });
-    } finally {
-      setIsSubmitting(false);
+  
+  const handleRegionChange = (newRegion: string) => {
+    setRegion(newRegion);
+    twitterApiService.updateConfig({ region: newRegion });
+  };
+  
+  const handleAddKeyword = () => {
+    if (newKeyword && !keywords.includes(newKeyword)) {
+      const updatedKeywords = [...keywords, newKeyword];
+      setKeywords(updatedKeywords);
+      twitterApiService.updateConfig({ keywords: updatedKeywords });
+      setNewKeyword("");
     }
   };
-
-  const handleToggleConnection = async () => {
-    if (connectionStatus === "connected" || connectionStatus === "connecting") {
-      twitterApiService.disconnect();
-    } else {
-      const config = twitterApiService.getConfig();
-      
-      if (!config.bearerToken) {
-        toast({
-          title: "Missing credentials",
-          description: "Please provide a Bearer Token to connect.",
-          variant: "destructive",
-          duration: 3000,
-        });
-        return;
-      }
-      
-      if (!config.keywords.length) {
-        toast({
-          title: "Missing keywords",
-          description: "Please add at least one keyword to track.",
-          variant: "destructive",
-          duration: 3000,
-        });
-        return;
-      }
-      
-      const success = await twitterApiService.connect();
-      
-      if (!success) {
-        toast({
-          title: "Connection failed",
-          description: "Failed to connect to Twitter API. Check your credentials.",
-          variant: "destructive",
-          duration: 3000,
-        });
-        // Fall back to simulation if real connection fails
-        twitterApiService.simulateTweets();
-      }
+  
+  const handleRemoveKeyword = (keyword: string) => {
+    const updatedKeywords = keywords.filter(k => k !== keyword);
+    setKeywords(updatedKeywords);
+    twitterApiService.updateConfig({ keywords: updatedKeywords });
+  };
+  
+  const handleConnect = () => {
+    if (bearerToken && keywords.length > 0) {
+      twitterApiService.connect();
     }
   };
-
-  const handleToggleActive = (value: boolean) => {
-    setIsActive(value);
-    twitterApiService.setConfig({ isActive: value });
-    
-    if (value && connectionStatus === "disconnected") {
-      // Automatically connect when activating
-      handleToggleConnection();
-    }
+  
+  const handleDisconnect = () => {
+    twitterApiService.disconnect();
   };
-
-  const canConnect = bearerToken !== "" && keywords.length > 0;
-
+  
   return (
-    <div className="glass-panel p-6 h-full flex flex-col">
-      <h2 className="text-lg font-semibold mb-4">X/Twitter Integration</h2>
+    <Card className="h-full overflow-y-auto p-6">
+      <h2 className="text-xl font-bold mb-4">API Configuration</h2>
       
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="twitter-active"
-            checked={isActive}
-            onCheckedChange={handleToggleActive}
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Twitter API</h3>
+          <TwitterCredentials 
+            bearerToken={bearerToken}
+            onBearerTokenChange={handleBearerTokenChange}
           />
-          <Label htmlFor="twitter-active">Enable Twitter Monitoring</Label>
         </div>
         
-        <ConnectionStatus status={connectionStatus as any} />
-      </div>
-      
-      <div className="space-y-4 mb-6">
-        <KeywordManager 
-          keywords={keywords} 
-          onKeywordsChange={handleKeywordsChange} 
-        />
+        <Separator />
         
-        <RegionSelector 
-          region={region} 
-          onRegionChange={handleRegionChange} 
-        />
+        <div>
+          <h3 className="text-lg font-semibold mb-2">OpenAI API</h3>
+          <OpenAICredentials 
+            apiKey={openaiKey}
+            onApiKeyChange={handleOpenAIKeyChange}
+          />
+        </div>
         
-        <TwitterCredentials 
-          bearerToken={bearerToken} 
-          onBearerTokenChange={setBearerToken} 
-        />
+        <Separator />
+        
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Twitter Stream Settings</h3>
+          <RegionSelector 
+            selectedRegion={region} 
+            onRegionChange={handleRegionChange} 
+          />
+          
+          <div className="mt-4">
+            <KeywordManager
+              keywords={keywords}
+              newKeyword={newKeyword}
+              onNewKeywordChange={setNewKeyword}
+              onAddKeyword={handleAddKeyword}
+              onRemoveKeyword={handleRemoveKeyword}
+            />
+          </div>
+        </div>
+        
+        <Separator />
+        
+        <div>
+          <ConnectionStatus isConnected={isConnected} />
+          
+          <div className="mt-2">
+            <ControlButtons
+              isConnected={isConnected}
+              canConnect={!!bearerToken && keywords.length > 0}
+              onConnect={handleConnect}
+              onDisconnect={handleDisconnect}
+            />
+          </div>
+        </div>
       </div>
-      
-      <ControlButtons 
-        connectionStatus={connectionStatus}
-        onSaveConfig={handleSaveConfig}
-        onToggleConnection={handleToggleConnection}
-        isSubmitting={isSubmitting}
-        canConnect={canConnect}
-      />
-    </div>
+    </Card>
   );
 };
 

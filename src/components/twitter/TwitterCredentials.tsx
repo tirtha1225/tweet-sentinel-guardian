@@ -18,7 +18,10 @@ const TwitterCredentials: React.FC<TwitterCredentialsProps> = ({ bearerToken, on
         onChange={(e) => onBearerTokenChange(e.target.value)}
         className="mb-1"
       />
-      <p className="text-xs text-neutral-500">Required for connecting to Twitter's API.</p>
+      <p className="text-xs text-neutral-500">
+        Required for connecting to Twitter's API. 
+        Your API key is stored locally and never sent to our servers.
+      </p>
     </div>
   );
 };
