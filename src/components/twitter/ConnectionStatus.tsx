@@ -1,30 +1,26 @@
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
+import { Wifi, WifiOff } from "lucide-react";
 
-type ConnectionStatusType = "connected" | "connecting" | "error" | "disconnected";
-
-interface ConnectionStatusProps {
-  status: ConnectionStatusType;
+export interface ConnectionStatusProps {
+  connected: boolean;
 }
 
-const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ status }) => {
+const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ connected }) => {
   return (
-    <Badge 
-      variant="outline" 
-      className={`
-        px-3 py-1 
-        ${status === "connected" ? "bg-green-500/10 text-green-600 border-green-600" : 
-          status === "connecting" ? "bg-yellow-500/10 text-yellow-600 border-yellow-600" :
-          status === "error" ? "bg-red-500/10 text-red-600 border-red-600" :
-          "bg-neutral-200 text-neutral-600 border-neutral-400"}
-      `}
-    >
-      {status === "connected" ? "Connected" :
-       status === "connecting" ? "Connecting..." :
-       status === "error" ? "Connection Error" :
-       "Disconnected"}
-    </Badge>
+    <div className="flex items-center space-x-2">
+      {connected ? (
+        <>
+          <Wifi className="h-4 w-4 text-green-500" />
+          <span className="text-sm font-medium text-green-500">Connected to Twitter API</span>
+        </>
+      ) : (
+        <>
+          <WifiOff className="h-4 w-4 text-neutral-500" />
+          <span className="text-sm font-medium text-neutral-500">Not connected to Twitter API</span>
+        </>
+      )}
+    </div>
   );
 };
 

@@ -2,13 +2,12 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { twitterApiService } from "@/lib/twitterApiService";
-import { openaiService } from "@/lib/openaiService";
-import RegionSelector from "@/components/twitter/RegionSelector";
 import TwitterCredentials from "@/components/twitter/TwitterCredentials";
+import RegionSelector from "@/components/twitter/RegionSelector";
 import KeywordManager from "@/components/twitter/KeywordManager";
 import ConnectionStatus from "@/components/twitter/ConnectionStatus";
 import ControlButtons from "@/components/twitter/ControlButtons";
-import OpenAICredentials from "@/components/OpenAICredentials";
+import ModelLoadingStatus from "@/components/ModelLoadingStatus";
 import { Separator } from "@/components/ui/separator";
 
 const TwitterConfigPanel = () => {
@@ -17,7 +16,6 @@ const TwitterConfigPanel = () => {
   const [newKeyword, setNewKeyword] = useState("");
   const [region, setRegion] = useState("us");
   const [isConnected, setIsConnected] = useState(false);
-  const [openaiKey, setOpenaiKey] = useState("");
   
   useEffect(() => {
     // Load Twitter API configuration
@@ -27,12 +25,12 @@ const TwitterConfigPanel = () => {
     setRegion(config.region || "us");
     setIsConnected(config.isActive || false);
     
-    // Load OpenAI API key
-    const apiKey = openaiService.getApiKey();
-    setOpenaiKey(apiKey || "");
+    // Get current connection status
+    const connectionStatus = twitterApiService.getConnectionStatus();
+    setIsConnected(connectionStatus);
     
-    // Subscribe to connection status changes
-    const unsubscribe = twitterApiService.subscribeToConnectionStatus((status) => {
+    // Create connection status subscription
+    const unsubscribe = twitterApiService.onConnectionStatusChange((status) => {
       setIsConnected(status);
     });
     
@@ -43,24 +41,19 @@ const TwitterConfigPanel = () => {
   
   const handleBearerTokenChange = (token: string) => {
     setBearerToken(token);
-    twitterApiService.updateConfig({ bearerToken: token });
-  };
-  
-  const handleOpenAIKeyChange = (key: string) => {
-    setOpenaiKey(key);
-    openaiService.setApiKey(key);
+    twitterApiService.setBearerToken(token);
   };
   
   const handleRegionChange = (newRegion: string) => {
     setRegion(newRegion);
-    twitterApiService.updateConfig({ region: newRegion });
+    twitterApiService.setRegion(newRegion);
   };
   
   const handleAddKeyword = () => {
     if (newKeyword && !keywords.includes(newKeyword)) {
       const updatedKeywords = [...keywords, newKeyword];
       setKeywords(updatedKeywords);
-      twitterApiService.updateConfig({ keywords: updatedKeywords });
+      twitterApiService.setKeywords(updatedKeywords);
       setNewKeyword("");
     }
   };
@@ -68,7 +61,7 @@ const TwitterConfigPanel = () => {
   const handleRemoveKeyword = (keyword: string) => {
     const updatedKeywords = keywords.filter(k => k !== keyword);
     setKeywords(updatedKeywords);
-    twitterApiService.updateConfig({ keywords: updatedKeywords });
+    twitterApiService.setKeywords(updatedKeywords);
   };
   
   const handleConnect = () => {
@@ -97,11 +90,8 @@ const TwitterConfigPanel = () => {
         <Separator />
         
         <div>
-          <h3 className="text-lg font-semibold mb-2">OpenAI API</h3>
-          <OpenAICredentials 
-            apiKey={openaiKey}
-            onApiKeyChange={handleOpenAIKeyChange}
-          />
+          <h3 className="text-lg font-semibold mb-2">Content Moderation</h3>
+          <ModelLoadingStatus />
         </div>
         
         <Separator />
@@ -109,15 +99,15 @@ const TwitterConfigPanel = () => {
         <div>
           <h3 className="text-lg font-semibold mb-2">Twitter Stream Settings</h3>
           <RegionSelector 
-            selectedRegion={region} 
+            region={region} 
             onRegionChange={handleRegionChange} 
           />
           
           <div className="mt-4">
             <KeywordManager
               keywords={keywords}
-              newKeyword={newKeyword}
-              onNewKeywordChange={setNewKeyword}
+              currentKeyword={newKeyword}
+              onKeywordChange={setNewKeyword}
               onAddKeyword={handleAddKeyword}
               onRemoveKeyword={handleRemoveKeyword}
             />
@@ -127,11 +117,13 @@ const TwitterConfigPanel = () => {
         <Separator />
         
         <div>
-          <ConnectionStatus isConnected={isConnected} />
+          <ConnectionStatus 
+            connected={isConnected} 
+          />
           
           <div className="mt-2">
             <ControlButtons
-              isConnected={isConnected}
+              connected={isConnected}
               canConnect={!!bearerToken && keywords.length > 0}
               onConnect={handleConnect}
               onDisconnect={handleDisconnect}

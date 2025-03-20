@@ -1,78 +1,67 @@
 
-import React, { useState } from "react";
-import { Plus, X } from "lucide-react";
+import React from "react";
+import { X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
-interface KeywordManagerProps {
+export interface KeywordManagerProps {
   keywords: string[];
-  onKeywordsChange: (keywords: string[]) => void;
+  currentKeyword: string;
+  onKeywordChange: (keyword: string) => void;
+  onAddKeyword: () => void;
+  onRemoveKeyword: (keyword: string) => void;
 }
 
-const KeywordManager: React.FC<KeywordManagerProps> = ({ keywords, onKeywordsChange }) => {
-  const [keyword, setKeyword] = useState("");
-
-  const handleAddKeyword = () => {
-    if (keyword.trim() && !keywords.includes(keyword.trim())) {
-      const newKeywords = [...keywords, keyword.trim()];
-      onKeywordsChange(newKeywords);
-      setKeyword("");
-    }
-  };
-
-  const handleRemoveKeyword = (keywordToRemove: string) => {
-    const newKeywords = keywords.filter(k => k !== keywordToRemove);
-    onKeywordsChange(newKeywords);
+const KeywordManager: React.FC<KeywordManagerProps> = ({
+  keywords,
+  currentKeyword,
+  onKeywordChange,
+  onAddKeyword,
+  onRemoveKeyword,
+}) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAddKeyword();
   };
 
   return (
     <div>
-      <label className="text-sm font-medium mb-1 block">Keywords to Monitor</label>
-      <div className="flex space-x-2 mb-2">
+      <label className="text-sm font-medium mb-1 block">Keywords</label>
+      <form className="flex space-x-2 mb-2" onSubmit={handleSubmit}>
         <Input
           type="text"
-          placeholder="Add keyword or hashtag..."
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleAddKeyword();
-            }
-          }}
+          placeholder="Add keyword..."
+          value={currentKeyword}
+          onChange={(e) => onKeywordChange(e.target.value)}
           className="flex-1"
         />
         <Button 
-          type="button"
-          size="icon"
-          onClick={handleAddKeyword}
-          disabled={!keyword.trim()}
+          type="submit" 
+          size="sm"
+          disabled={!currentKeyword.trim()}
         >
-          <Plus className="h-4 w-4" />
+          Add
         </Button>
-      </div>
+      </form>
       
-      <div className="flex flex-wrap gap-2 mb-4">
-        {keywords.map((kw, index) => (
-          <Badge 
-            key={index} 
-            variant="secondary"
-            className="flex items-center space-x-1 py-1"
-          >
-            <span>{kw}</span>
-            <button 
-              onClick={() => handleRemoveKeyword(kw)} 
-              className="ml-1 h-4 w-4 rounded-full inline-flex items-center justify-center"
-            >
-              <X className="h-3 w-3" />
-            </button>
+      <div className="flex flex-wrap gap-2 mt-2">
+        {keywords.map((keyword) => (
+          <Badge key={keyword} variant="secondary" className="py-1 px-2">
+            {keyword}
+            <X
+              className="h-3 w-3 ml-1 cursor-pointer"
+              onClick={() => onRemoveKeyword(keyword)}
+            />
           </Badge>
         ))}
         {keywords.length === 0 && (
-          <p className="text-sm text-neutral-500">No keywords added. Add keywords to monitor.</p>
+          <p className="text-sm text-neutral-500">No keywords added yet</p>
         )}
       </div>
+      <p className="text-xs text-neutral-500 mt-1">
+        Add keywords to filter the Twitter stream
+      </p>
     </div>
   );
 };
