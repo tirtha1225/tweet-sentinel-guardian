@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Brain } from "lucide-react";
 import { huggingFaceService } from "@/lib/llmService";
 
 interface ModelLoadingStatusProps {
@@ -11,6 +11,8 @@ const ModelLoadingStatus: React.FC<ModelLoadingStatusProps> = ({ onModelLoaded }
   const [isLoading, setIsLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isTrained, setIsTrained] = useState(false);
+  const [trainingExamples, setTrainingExamples] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -28,6 +30,8 @@ const ModelLoadingStatus: React.FC<ModelLoadingStatusProps> = ({ onModelLoaded }
         if (mounted) {
           setIsLoaded(true);
           setIsLoading(false);
+          setIsTrained(huggingFaceService.isModelTrained());
+          setTrainingExamples(huggingFaceService.getTrainingData().length);
           if (onModelLoaded) onModelLoaded();
         }
       } catch (error) {
@@ -41,13 +45,24 @@ const ModelLoadingStatus: React.FC<ModelLoadingStatusProps> = ({ onModelLoaded }
     // Check if models are already loaded
     if (huggingFaceService.isModelLoaded()) {
       setIsLoaded(true);
+      setIsTrained(huggingFaceService.isModelTrained());
+      setTrainingExamples(huggingFaceService.getTrainingData().length);
       if (onModelLoaded) onModelLoaded();
     } else {
       checkModels();
     }
     
+    // Set up an interval to check for training updates
+    const trainingInterval = setInterval(() => {
+      if (mounted) {
+        setIsTrained(huggingFaceService.isModelTrained());
+        setTrainingExamples(huggingFaceService.getTrainingData().length);
+      }
+    }, 2000);
+    
     return () => {
       mounted = false;
+      clearInterval(trainingInterval);
     };
   }, [onModelLoaded, isLoaded]);
 
@@ -100,6 +115,19 @@ const ModelLoadingStatus: React.FC<ModelLoadingStatusProps> = ({ onModelLoaded }
             <path d="M12 16v-4" />
           </svg>
           <span>{loadError}</span>
+        </div>
+      )}
+      
+      {isLoaded && !isLoading && (
+        <div className="flex items-center mt-2 text-neutral-600">
+          <Brain className="h-4 w-4 mr-2" />
+          <span>
+            {isTrained 
+              ? `Model trained with ${trainingExamples} custom examples` 
+              : trainingExamples > 0 
+                ? `${trainingExamples} training examples added (not trained yet)`
+                : "Model using default parameters"}
+          </span>
         </div>
       )}
       

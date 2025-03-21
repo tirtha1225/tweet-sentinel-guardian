@@ -9,6 +9,8 @@ import ConnectionStatus from "@/components/twitter/ConnectionStatus";
 import ControlButtons from "@/components/twitter/ControlButtons";
 import ModelLoadingStatus from "@/components/ModelLoadingStatus";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ModelTrainingPanel from "@/components/ModelTrainingPanel";
 
 const TwitterConfigPanel = () => {
   const [bearerToken, setBearerToken] = useState("");
@@ -16,6 +18,7 @@ const TwitterConfigPanel = () => {
   const [newKeyword, setNewKeyword] = useState("");
   const [region, setRegion] = useState("us");
   const [isConnected, setIsConnected] = useState(false);
+  const [activeTab, setActiveTab] = useState("config");
   
   useEffect(() => {
     // Load Twitter API configuration
@@ -75,62 +78,75 @@ const TwitterConfigPanel = () => {
   };
   
   return (
-    <Card className="h-full overflow-y-auto p-6">
-      <h2 className="text-xl font-bold mb-4">API Configuration</h2>
-      
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Twitter API</h3>
-          <TwitterCredentials 
-            bearerToken={bearerToken}
-            onBearerTokenChange={handleBearerTokenChange}
-          />
-        </div>
+    <Card className="h-full overflow-y-auto">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+        <TabsList className="grid grid-cols-2 mb-0 w-full rounded-t-lg rounded-b-none">
+          <TabsTrigger value="config">Configuration</TabsTrigger>
+          <TabsTrigger value="training">Model Training</TabsTrigger>
+        </TabsList>
         
-        <Separator />
-        
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Content Moderation</h3>
-          <ModelLoadingStatus />
-        </div>
-        
-        <Separator />
-        
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Twitter Stream Settings</h3>
-          <RegionSelector 
-            region={region} 
-            onRegionChange={handleRegionChange} 
-          />
+        <TabsContent value="config" className="m-0 h-full p-6 pt-5">
+          <h2 className="text-xl font-bold mb-4">API Configuration</h2>
           
-          <div className="mt-4">
-            <KeywordManager
-              keywords={keywords}
-              currentKeyword={newKeyword}
-              onKeywordChange={setNewKeyword}
-              onAddKeyword={handleAddKeyword}
-              onRemoveKeyword={handleRemoveKeyword}
-            />
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Twitter API</h3>
+              <TwitterCredentials 
+                bearerToken={bearerToken}
+                onBearerTokenChange={handleBearerTokenChange}
+              />
+            </div>
+            
+            <Separator />
+            
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Content Moderation</h3>
+              <ModelLoadingStatus />
+            </div>
+            
+            <Separator />
+            
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Twitter Stream Settings</h3>
+              <RegionSelector 
+                region={region} 
+                onRegionChange={handleRegionChange} 
+              />
+              
+              <div className="mt-4">
+                <KeywordManager
+                  keywords={keywords}
+                  currentKeyword={newKeyword}
+                  onKeywordChange={setNewKeyword}
+                  onAddKeyword={handleAddKeyword}
+                  onRemoveKeyword={handleRemoveKeyword}
+                />
+              </div>
+            </div>
+            
+            <Separator />
+            
+            <div>
+              <ConnectionStatus 
+                connected={isConnected} 
+              />
+              
+              <div className="mt-2">
+                <ControlButtons
+                  connected={isConnected}
+                  canConnect={!!bearerToken && keywords.length > 0}
+                  onConnect={handleConnect}
+                  onDisconnect={handleDisconnect}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        </TabsContent>
         
-        <Separator />
-        
-        <div>
-          <ConnectionStatus 
-            connected={isConnected} 
-          />
-          
-          <div className="mt-2">
-            <ControlButtons
-              connected={isConnected}
-              canConnect={!!bearerToken && keywords.length > 0}
-              onConnect={handleConnect}
-              onDisconnect={handleDisconnect}
-            />
-          </div>
-        </div>
-      </div>
+        <TabsContent value="training" className="m-0 h-full">
+          <ModelTrainingPanel />
+        </TabsContent>
+      </Tabs>
     </Card>
   );
 };

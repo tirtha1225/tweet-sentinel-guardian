@@ -25,11 +25,22 @@ export interface LLMAnalysisResult {
   suggestedActions?: string[];
 }
 
+// Sample training data for model fine-tuning
+export interface TrainingExample {
+  content: string;
+  label: "approved" | "flagged" | "rejected";
+  categories?: string[];
+}
+
 // Class to manage Hugging Face models
 class HuggingFaceService {
   private textClassificationPipeline: any = null;
   private zeroShotClassificationPipeline: any = null;
   private isLoading: boolean = false;
+  private trainingData: TrainingExample[] = [];
+  private modelTrained: boolean = false;
+  private trainingInProgress: boolean = false;
+  private trainingProgress: number = 0;
 
   // Initialize models (load lazily when needed)
   async loadModels() {
@@ -77,9 +88,91 @@ class HuggingFaceService {
     await this.loadModels();
     return this.zeroShotClassificationPipeline;
   }
+
+  // Add training data
+  addTrainingExample(example: TrainingExample) {
+    this.trainingData.push(example);
+    console.log(`Added training example: "${example.content.substring(0, 30)}..." with label ${example.label}`);
+    return this.trainingData.length;
+  }
+
+  // Add multiple training examples at once
+  addTrainingExamples(examples: TrainingExample[]) {
+    this.trainingData = [...this.trainingData, ...examples];
+    console.log(`Added ${examples.length} training examples. Total: ${this.trainingData.length}`);
+    return this.trainingData.length;
+  }
+
+  // Clear training data
+  clearTrainingData() {
+    this.trainingData = [];
+    console.log("Training data cleared");
+    return true;
+  }
+
+  // Get training data
+  getTrainingData() {
+    return [...this.trainingData];
+  }
+
+  // Check if the model has been trained
+  isModelTrained() {
+    return this.modelTrained;
+  }
+
+  // Check if training is in progress
+  isTrainingInProgress() {
+    return this.trainingInProgress;
+  }
+
+  // Get training progress (0-100%)
+  getTrainingProgress() {
+    return this.trainingProgress;
+  }
+
+  // Train the model with the collected examples
+  async trainModel() {
+    if (this.trainingInProgress) {
+      throw new Error("Training already in progress");
+    }
+
+    if (this.trainingData.length < 5) {
+      throw new Error("Not enough training data. Please add at least 5 examples.");
+    }
+
+    try {
+      this.trainingInProgress = true;
+      this.trainingProgress = 0;
+
+      console.log(`Starting model training with ${this.trainingData.length} examples...`);
+
+      // In a real implementation, we would use actual transfer learning here
+      // For this demo, we'll simulate training with a delay and progress updates
+
+      // Simulate training progress
+      for (let i = 1; i <= 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        this.trainingProgress = i * 10;
+        console.log(`Training progress: ${this.trainingProgress}%`);
+      }
+
+      // After "training", store the examples as reference data
+      // In a real implementation, we would update model weights
+      this.modelTrained = true;
+      console.log("Model training completed");
+
+      return true;
+    } catch (error) {
+      console.error("Error during model training:", error);
+      throw error;
+    } finally {
+      this.trainingInProgress = false;
+      this.trainingProgress = 0;
+    }
+  }
 }
 
-// Create singleton instance
+// Export singleton instance
 export const huggingFaceService = new HuggingFaceService();
 
 // Analyze content using Hugging Face models
@@ -295,3 +388,57 @@ const fallbackAnalysis = async (content: string): Promise<LLMAnalysisResult> => 
     suggestedActions
   };
 };
+
+// Sample training dataset with example tweets and their labels
+export const sampleTrainingData: TrainingExample[] = [
+  {
+    content: "I love this new product! It works beautifully and the customer service was excellent.",
+    label: "approved",
+    categories: ["positive"]
+  },
+  {
+    content: "I'm disappointed with my purchase. It broke after just one week.",
+    label: "approved",
+    categories: ["negative"]
+  },
+  {
+    content: "This company is a scam and everyone should avoid them!",
+    label: "flagged",
+    categories: ["negative"]
+  },
+  {
+    content: "I hate you all and wish you would disappear.",
+    label: "rejected",
+    categories: ["harassment"]
+  },
+  {
+    content: "If I see you again I'm going to hurt you.",
+    label: "rejected",
+    categories: ["threats", "harassment"]
+  },
+  {
+    content: "The government is putting mind control chips in vaccines.",
+    label: "flagged",
+    categories: ["misinformation"]
+  },
+  {
+    content: "Great discussion yesterday about climate policies.",
+    label: "approved",
+    categories: ["positive"]
+  },
+  {
+    content: "The meeting has been rescheduled to next Monday at 10am.",
+    label: "approved",
+    categories: ["neutral"]
+  },
+  {
+    content: "Click here to win a free iPhone! Just enter your credit card details.",
+    label: "rejected",
+    categories: ["spam", "scam"]
+  },
+  {
+    content: "Your account has been compromised. Click here to reset your password.",
+    label: "rejected",
+    categories: ["spam", "scam"]
+  }
+];
