@@ -406,65 +406,93 @@ const getRelevantPolicies = async (content: string) => {
 const fallbackAnalysis = async (content: string): Promise<LLMAnalysisResult> => {
   console.log("Using fallback analysis system");
   
-  // Simple keyword-based analysis
-  const containsHarassment = content.toLowerCase().includes('bad') || 
-                            content.toLowerCase().includes('hate');
+  // Enhanced keyword-based analysis with more comprehensive profanity and hate speech detection
+  const profanityWords = [
+    'damn', 'hell', 'ass', 'bitch', 'shit', 'fuck', 'crap', 'bastard', 
+    'whore', 'slut', 'dick', 'pussy', 'asshole', 'motherfucker'
+  ];
   
-  const containsProfanity = content.toLowerCase().includes('damn') || 
-                           content.toLowerCase().includes('hell');
+  const hateWords = [
+    'hate', 'stupid', 'idiot', 'dumb', 'moron', 'retard', 'loser', 
+    'ugly', 'fat', 'kill', 'die', 'attack', 'worthless', 'useless'
+  ];
+  
+  const slurs = [
+    'nigger', 'nigga', 'faggot', 'fag', 'dyke', 'tranny', 'chink', 
+    'spic', 'wetback', 'kike', 'gook', 'raghead', 'towelhead', 'paki'
+  ];
+  
+  // Check for presence of any profanity or hate speech
+  const containsProfanity = profanityWords.some(word => 
+    content.toLowerCase().includes(word.toLowerCase()) || 
+    new RegExp(`\\b${word}\\b`, 'i').test(content)
+  );
+  
+  const containsHateSpeech = hateWords.some(word => 
+    content.toLowerCase().includes(word.toLowerCase()) || 
+    new RegExp(`\\b${word}\\b`, 'i').test(content)
+  );
+  
+  const containsSlurs = slurs.some(word => 
+    content.toLowerCase().includes(word.toLowerCase()) || 
+    new RegExp(`\\b${word}\\b`, 'i').test(content)
+  );
   
   const containsThreat = content.toLowerCase().includes('kill') || 
                         content.toLowerCase().includes('destroy') || 
-                        content.toLowerCase().includes('hurt');
+                        content.toLowerCase().includes('hurt') ||
+                        content.toLowerCase().includes('die') ||
+                        content.toLowerCase().includes('murder') ||
+                        content.toLowerCase().includes('attack');
 
-  const isNegative = containsHarassment || containsProfanity || containsThreat;
+  // Determine severity levels for different types of content issues
+  const profanityScore = containsProfanity ? 0.7 : 0.1;
+  const hateSpeechScore = containsHateSpeech ? 0.75 : 0.2;
+  const slurScore = containsSlurs ? 0.95 : 0;
+  const threatScore = containsThreat ? 0.9 : 0.1;
   
   // Determine categories with scores and explanations
   const categories = [
     { 
-      name: "Harassment", 
-      score: containsHarassment ? 0.8 : 0.1,
-      explanation: containsHarassment 
-        ? "The content contains language that appears to be targeting others in a negative way." 
-        : "No significant harassment detected in the content."
-    },
-    { 
-      name: "Negativity", 
-      score: isNegative ? 0.75 : 0.2,
-      explanation: isNegative 
-        ? "The overall tone of the content is negative, which may create an unwelcoming environment." 
-        : "The content maintains a generally neutral or positive tone."
+      name: "Hate Speech", 
+      score: Math.max(hateSpeechScore, slurScore),
+      explanation: (hateSpeechScore > 0.5 || slurScore > 0) 
+        ? "The content contains language that may be targeting specific groups or individuals in a derogatory way." 
+        : "No significant hate speech detected in the content."
     },
     { 
       name: "Profanity", 
-      score: containsProfanity ? 0.7 : 0.05,
+      score: profanityScore,
       explanation: containsProfanity 
-        ? "The content contains words that may be considered profane or inappropriate." 
+        ? "The content contains words that are considered profane or inappropriate." 
         : "No significant profanity detected in the content."
     },
     { 
       name: "Threats", 
-      score: containsThreat ? 0.9 : 0.01,
+      score: threatScore,
       explanation: containsThreat 
         ? "The content contains language that could be interpreted as threatening violence." 
         : "No threatening language detected in the content."
     }
   ];
   
-  // Decision logic
+  // Sort categories by score (highest first)
+  categories.sort((a, b) => b.score - a.score);
+  
+  // Decision logic with stricter thresholds
   let decision: "approved" | "flagged" | "rejected";
   let reasoning: string;
   let suggestedActions: string[] | undefined;
   
-  if (containsThreat) {
+  if (containsSlurs || threatScore > 0.8) {
     decision = "rejected";
-    reasoning = "The content contains language that may be interpreted as threatening, which violates our platform's safety policies.";
+    reasoning = "The content contains language that violates our platform's community guidelines, such as slurs or threatening content.";
     suggestedActions = [
-      "Remove threatening language",
+      "Remove offensive language",
       "Rephrase to express disagreement respectfully",
       "Focus on constructive criticism rather than personal attacks"
     ];
-  } else if (containsHarassment || containsProfanity) {
+  } else if (profanityScore > 0.6 || hateSpeechScore > 0.6) {
     decision = "flagged";
     reasoning = "The content contains potentially harmful language that requires human review to determine if it violates platform policies.";
     suggestedActions = [

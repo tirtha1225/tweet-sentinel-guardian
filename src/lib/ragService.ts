@@ -39,7 +39,7 @@ export class RAGService {
   // Analyzes content topics
   async detectTopics(text: string): Promise<string[]> {
     // In a production version, this would use a topic classification model
-    // For now we'll use a simple keyword-based approach
+    // For now we'll use a simple keyword-based approach with expanded topics
     const topics = [];
     
     const topicKeywords: Record<string, string[]> = {
@@ -48,7 +48,11 @@ export class RAGService {
       "Entertainment": ["movie", "film", "music", "celebrity", "actor", "actress", "hollywood"],
       "Sports": ["sport", "game", "team", "player", "championship", "league", "score"],
       "Health": ["health", "medical", "doctor", "disease", "patient", "hospital", "treatment"],
-      "Finance": ["finance", "money", "bank", "investment", "stock", "market", "economy"]
+      "Finance": ["finance", "money", "bank", "investment", "stock", "market", "economy"],
+      "Hate Speech": ["hate", "racist", "sexist", "homophobic", "transphobic", "islamophobic", "antisemitic", "bigot"],
+      "Profanity": ["profanity", "swear", "curse", "explicit", "vulgar", "obscene", "inappropriate"],
+      "Harassment": ["harass", "bully", "intimidate", "threaten", "stalk", "troll", "doxx"],
+      "Misinformation": ["fake", "false", "mislead", "conspiracy", "hoax", "rumor", "propaganda"]
     };
     
     for (const [topic, keywords] of Object.entries(topicKeywords)) {

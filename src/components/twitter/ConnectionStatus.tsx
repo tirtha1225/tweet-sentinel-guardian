@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Wifi, WifiOff, Brain, Twitter } from "lucide-react";
+import { Wifi, WifiOff, Brain, Twitter, AlertTriangle } from "lucide-react";
 import { huggingFaceService } from "@/lib/llmService";
 
 export interface ConnectionStatusProps {
@@ -38,6 +38,13 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ connected }) => {
         <Twitter className={`h-4 w-4 ${hasTwitterTraining ? "text-green-500" : "text-neutral-500"}`} />
         <span className={`text-sm font-medium ${hasTwitterTraining ? "text-green-500" : "text-neutral-500"}`}>
           {hasTwitterTraining ? "Twitter context training enabled" : "Twitter context training not enabled"}
+        </span>
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <AlertTriangle className="h-4 w-4 text-amber-500" />
+        <span className="text-sm font-medium text-amber-500">
+          Enhanced profanity & hate speech detection active
         </span>
       </div>
     </div>
