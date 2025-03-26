@@ -1,9 +1,11 @@
+
 // Type definitions for Twitter API
 interface TwitterConfig {
   bearerToken: string;
   keywords: string[];
   region: string;
   isActive: boolean;
+  contextTrainingEnabled?: boolean;
 }
 
 interface TwitterStreamParams {
@@ -17,10 +19,12 @@ class TwitterApiService {
     bearerToken: '',
     keywords: [] as string[],
     region: 'us',
-    isActive: false
+    isActive: false,
+    contextTrainingEnabled: false
   };
   
   private connectionListeners: Array<(status: boolean) => void> = [];
+  private trainingListeners: Array<(enabled: boolean) => void> = [];
   
   constructor() {
     // Load config from localStorage if available
@@ -47,6 +51,16 @@ class TwitterApiService {
   setRegion(region: string) {
     this.config.region = region;
     this.saveConfig();
+  }
+  
+  setContextTrainingEnabled(enabled: boolean) {
+    this.config.contextTrainingEnabled = enabled;
+    this.saveConfig();
+    this.notifyTrainingListeners(enabled);
+  }
+  
+  isContextTrainingEnabled() {
+    return this.config.contextTrainingEnabled;
   }
   
   private saveConfig() {
@@ -93,8 +107,22 @@ class TwitterApiService {
     };
   }
   
+  onContextTrainingStatusChange(listener: (enabled: boolean) => void) {
+    this.trainingListeners.push(listener);
+    return () => {
+      const index = this.trainingListeners.indexOf(listener);
+      if (index > -1) {
+        this.trainingListeners.splice(index, 1);
+      }
+    };
+  }
+  
   private notifyConnectionListeners(status: boolean) {
     this.connectionListeners.forEach(listener => listener(status));
+  }
+  
+  private notifyTrainingListeners(enabled: boolean) {
+    this.trainingListeners.forEach(listener => listener(enabled));
   }
   
   updateConfig(partialConfig: Partial<TwitterConfig>) {
@@ -107,6 +135,10 @@ class TwitterApiService {
   
   subscribeToConnectionStatus(callback: (isConnected: boolean) => void) {
     return this.onConnectionStatusChange(callback);
+  }
+  
+  subscribeToContextTrainingStatus(callback: (isEnabled: boolean) => void) {
+    return this.onContextTrainingStatusChange(callback);
   }
 }
 

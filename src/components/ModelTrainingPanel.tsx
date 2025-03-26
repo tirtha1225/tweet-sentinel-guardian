@@ -1,16 +1,19 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Check, AlertCircle, Upload } from "lucide-react";
+import { Loader2, Check, AlertCircle, Upload, Twitter } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { huggingFaceService, TrainingExample, sampleTrainingData } from "@/lib/llmService";
+import { twitterApiService } from "@/lib/twitterApiService";
 
 const ModelTrainingPanel: React.FC = () => {
   const { toast } = useToast();
@@ -28,14 +31,25 @@ const ModelTrainingPanel: React.FC = () => {
     "positive", "negative", "neutral", "harassment", "hate speech", 
     "threats", "profanity", "misinformation", "spam", "scam"
   ]);
+  const [twitterContextEnabled, setTwitterContextEnabled] = useState(false);
 
-  // Load training data on mount
+  // Load training data and settings on mount
   useEffect(() => {
     const data = huggingFaceService.getTrainingData();
     if (data.length > 0) {
       setTrainingData(data);
     }
     setIsTrained(huggingFaceService.isModelTrained());
+    setTwitterContextEnabled(huggingFaceService.hasTwitterContextTraining());
+    
+    // Subscribe to Twitter context training status changes
+    const unsubscribe = twitterApiService.subscribeToContextTrainingStatus((enabled) => {
+      setTwitterContextEnabled(enabled);
+    });
+    
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // Monitor training progress
@@ -80,6 +94,25 @@ const ModelTrainingPanel: React.FC = () => {
     });
   };
 
+  const handleTwitterContextToggle = () => {
+    const newState = !twitterContextEnabled;
+    setTwitterContextEnabled(newState);
+    
+    if (newState) {
+      huggingFaceService.enableTwitterContextTraining();
+      toast({
+        title: "Twitter Context Training Enabled",
+        description: "Real-time tweets will now include contextual information for training",
+      });
+    } else {
+      huggingFaceService.disableTwitterContextTraining();
+      toast({
+        title: "Twitter Context Training Disabled",
+        description: "Tweets will no longer include contextual information for training",
+      });
+    }
+  };
+
   const handleAddExample = () => {
     if (!newExample.content.trim()) {
       toast({
@@ -91,7 +124,13 @@ const ModelTrainingPanel: React.FC = () => {
     }
 
     try {
-      huggingFaceService.addTrainingExample(newExample);
+      // Add source information
+      const exampleWithSource = {
+        ...newExample,
+        source: "manual" as const
+      };
+      
+      huggingFaceService.addTrainingExample(exampleWithSource);
       const updatedData = huggingFaceService.getTrainingData();
       setTrainingData(updatedData);
       setNewExample({
@@ -211,7 +250,13 @@ const ModelTrainingPanel: React.FC = () => {
           return;
         }
 
-        huggingFaceService.addTrainingExamples(examples);
+        // Add source information to examples
+        const examplesWithSource = examples.map(example => ({
+          ...example,
+          source: "csv" as const
+        }));
+
+        huggingFaceService.addTrainingExamples(examplesWithSource);
         const updatedData = huggingFaceService.getTrainingData();
         setTrainingData(updatedData);
         
@@ -394,6 +439,47 @@ const ModelTrainingPanel: React.FC = () => {
         <Separator />
         
         <div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Twitter Context Training</h3>
+            <Switch 
+              checked={twitterContextEnabled} 
+              onCheckedChange={handleTwitterContextToggle} 
+              id="twitter-context"
+            />
+          </div>
+          
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-4">
+            <div className="flex items-start">
+              <Twitter className="h-5 w-5 text-blue-500 mt-0.5 mr-2" />
+              <div>
+                <h4 className="font-medium text-sm">Context-Aware Training</h4>
+                <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                  When enabled, the model will use contextual information from Twitter such as keywords, 
+                  region settings, and tweet metadata to improve moderation accuracy for specific contexts.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-sm text-neutral-600 space-y-2 mb-3">
+            <p className="flex items-center">
+              <span className={`w-2 h-2 rounded-full ${twitterContextEnabled ? 'bg-green-500' : 'bg-neutral-300'} mr-2`}></span>
+              <span>Automated collection of contextual tweet data</span>
+            </p>
+            <p className="flex items-center">
+              <span className={`w-2 h-2 rounded-full ${twitterContextEnabled ? 'bg-green-500' : 'bg-neutral-300'} mr-2`}></span>
+              <span>Region-specific training adjustments</span>
+            </p>
+            <p className="flex items-center">
+              <span className={`w-2 h-2 rounded-full ${twitterContextEnabled ? 'bg-green-500' : 'bg-neutral-300'} mr-2`}></span>
+              <span>Keyword-aware moderation decisions</span>
+            </p>
+          </div>
+        </div>
+        
+        <Separator />
+        
+        <div>
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-semibold">Training Dataset</h3>
             <div className="text-sm text-neutral-500">{trainingData.length} examples</div>
@@ -450,7 +536,19 @@ const ModelTrainingPanel: React.FC = () => {
                           {cat}
                         </Badge>
                       ))}
+                      {example.source && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 ml-auto">
+                          {example.source === "twitter" ? "Twitter" : 
+                           example.source === "csv" ? "CSV" : "Manual"}
+                        </Badge>
+                      )}
                     </div>
+                    {example.source === "twitter" && example.contextData && (
+                      <div className="text-xs text-blue-600 mt-1">
+                        Context: {example.contextData.keywords?.join(", ") || "No keywords"} | 
+                        Region: {example.contextData.region || "Global"}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

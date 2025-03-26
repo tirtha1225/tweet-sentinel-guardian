@@ -1,6 +1,7 @@
 
 import { Tweet, mockTweets } from './mockData';
-import { analyzeTweetContent, LLMAnalysisResult } from './llmService';
+import { analyzeTweetContent, LLMAnalysisResult, huggingFaceService } from './llmService';
+import { twitterApiService } from './twitterApiService';
 
 interface TweetSource {
   name?: string;
@@ -15,6 +16,14 @@ interface TweetSource {
 class ModerationService {
   private tweets: Tweet[] = [...mockTweets];
   private listeners: Array<() => void> = [];
+
+  constructor() {
+    // Initialize Twitter context training status
+    const twitterContextEnabled = twitterApiService.isContextTrainingEnabled();
+    if (twitterContextEnabled) {
+      huggingFaceService.enableTwitterContextTraining();
+    }
+  }
 
   // Get all tweets
   getAllTweets(): Tweet[] {
@@ -33,12 +42,25 @@ class ModerationService {
 
   // Process a new tweet with LLM analysis
   async processTweet(tweetContent: string, source?: TweetSource): Promise<Tweet> {
-    // Get LLM analysis
-    const llmAnalysis = await analyzeTweetContent(tweetContent);
+    // Create a new tweet ID
+    const tweetId = `tweet-${Date.now()}`;
+    
+    // Store tweet context for training if Twitter context training is enabled
+    if (huggingFaceService.hasTwitterContextTraining() && source?.source === "twitter") {
+      huggingFaceService.storeTweetContext(tweetId, {
+        source: source.source,
+        keywords: twitterApiService.getConfig().keywords,
+        region: twitterApiService.getConfig().region,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Get LLM analysis with tweet context
+    const llmAnalysis = await analyzeTweetContent(tweetContent, tweetId);
     
     // Create new tweet with enhanced analysis
     const newTweet: Tweet = {
-      id: `tweet-${Date.now()}`,
+      id: tweetId,
       name: source?.name || "Test User",
       username: source?.username || "testuser",
       profileImage: source?.profileImage || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
@@ -75,6 +97,20 @@ class ModerationService {
           ...this.tweets[tweetIndex],
           status: newStatus,
         };
+        
+        // If Twitter context training is enabled, add this manual review as a training example
+        if (huggingFaceService.hasTwitterContextTraining()) {
+          const tweet = this.tweets[tweetIndex];
+          huggingFaceService.addTrainingExample({
+            content: tweet.content,
+            label: newStatus,
+            categories: tweet.analysis?.categories
+              .filter(c => c.score > 0.5)
+              .map(c => c.name.toLowerCase()),
+            source: "twitter",
+            contextData: huggingFaceService.getTweetContext(tweet.id)
+          });
+        }
         
         this.notifyListeners();
         resolve(this.tweets[tweetIndex]);

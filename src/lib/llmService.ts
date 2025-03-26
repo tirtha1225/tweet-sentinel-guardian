@@ -2,6 +2,7 @@
 import { Tweet } from './mockData';
 import { ragService } from './ragService';
 import { pipeline, env } from '@huggingface/transformers';
+import { twitterApiService } from './twitterApiService';
 
 // Configure Hugging Face optimizations
 env.useBrowserCache = true;
@@ -30,6 +31,13 @@ export interface TrainingExample {
   content: string;
   label: "approved" | "flagged" | "rejected";
   categories?: string[];
+  source?: "manual" | "twitter" | "csv";
+  contextData?: {
+    timestamp?: string;
+    keywords?: string[];
+    region?: string;
+    tweetMetadata?: any;
+  };
 }
 
 // Class to manage Hugging Face models
@@ -41,6 +49,19 @@ class HuggingFaceService {
   private modelTrained: boolean = false;
   private trainingInProgress: boolean = false;
   private trainingProgress: number = 0;
+  private twitterContextTrainingEnabled: boolean = false;
+  private tweetContextData: Map<string, any> = new Map();
+
+  constructor() {
+    // Subscribe to Twitter context training status changes
+    twitterApiService.subscribeToContextTrainingStatus((enabled) => {
+      this.twitterContextTrainingEnabled = enabled;
+      console.log(`Twitter context training ${enabled ? 'enabled' : 'disabled'}`);
+    });
+    
+    // Initialize with current status
+    this.twitterContextTrainingEnabled = twitterApiService.isContextTrainingEnabled();
+  }
 
   // Initialize models (load lazily when needed)
   async loadModels() {
@@ -91,6 +112,16 @@ class HuggingFaceService {
 
   // Add training data
   addTrainingExample(example: TrainingExample) {
+    // Enrich with Twitter context if available and it's from Twitter
+    if (example.source === 'twitter' && this.twitterContextTrainingEnabled) {
+      example.contextData = {
+        ...example.contextData,
+        keywords: twitterApiService.getConfig().keywords,
+        region: twitterApiService.getConfig().region,
+        timestamp: new Date().toISOString()
+      };
+    }
+    
     this.trainingData.push(example);
     console.log(`Added training example: "${example.content.substring(0, 30)}..." with label ${example.label}`);
     return this.trainingData.length;
@@ -98,14 +129,64 @@ class HuggingFaceService {
 
   // Add multiple training examples at once
   addTrainingExamples(examples: TrainingExample[]) {
+    // Enrich with Twitter context if enabled
+    if (this.twitterContextTrainingEnabled) {
+      examples = examples.map(example => {
+        if (!example.contextData) {
+          example.contextData = {
+            keywords: twitterApiService.getConfig().keywords,
+            region: twitterApiService.getConfig().region,
+            timestamp: new Date().toISOString()
+          };
+        }
+        return example;
+      });
+    }
+    
     this.trainingData = [...this.trainingData, ...examples];
     console.log(`Added ${examples.length} training examples. Total: ${this.trainingData.length}`);
     return this.trainingData.length;
   }
 
+  // Store tweet context data
+  storeTweetContext(tweetId: string, contextData: any) {
+    if (this.twitterContextTrainingEnabled) {
+      this.tweetContextData.set(tweetId, {
+        ...contextData,
+        timestamp: new Date().toISOString(),
+        keywords: twitterApiService.getConfig().keywords,
+        region: twitterApiService.getConfig().region
+      });
+      console.log(`Stored context data for tweet ${tweetId}`);
+    }
+  }
+
+  // Get tweet context data
+  getTweetContext(tweetId: string) {
+    return this.tweetContextData.get(tweetId);
+  }
+
+  // Check if Twitter context training is enabled
+  hasTwitterContextTraining() {
+    return this.twitterContextTrainingEnabled;
+  }
+
+  // Enable Twitter context training
+  enableTwitterContextTraining() {
+    twitterApiService.setContextTrainingEnabled(true);
+    this.twitterContextTrainingEnabled = true;
+  }
+
+  // Disable Twitter context training
+  disableTwitterContextTraining() {
+    twitterApiService.setContextTrainingEnabled(false);
+    this.twitterContextTrainingEnabled = false;
+  }
+
   // Clear training data
   clearTrainingData() {
     this.trainingData = [];
+    this.tweetContextData.clear();
     console.log("Training data cleared");
     return true;
   }
@@ -145,9 +226,11 @@ class HuggingFaceService {
       this.trainingProgress = 0;
 
       console.log(`Starting model training with ${this.trainingData.length} examples...`);
-
-      // In a real implementation, we would use actual transfer learning here
-      // For this demo, we'll simulate training with a delay and progress updates
+      
+      if (this.twitterContextTrainingEnabled) {
+        console.log("Twitter context training is enabled. Enriching training data with context.");
+        // In a real implementation, we would use the context data for more nuanced training
+      }
 
       // Simulate training progress
       for (let i = 1; i <= 10; i++) {
@@ -157,7 +240,6 @@ class HuggingFaceService {
       }
 
       // After "training", store the examples as reference data
-      // In a real implementation, we would update model weights
       this.modelTrained = true;
       console.log("Model training completed");
 
@@ -176,7 +258,7 @@ class HuggingFaceService {
 export const huggingFaceService = new HuggingFaceService();
 
 // Analyze content using Hugging Face models
-export const analyzeTweetContent = async (content: string): Promise<LLMAnalysisResult> => {
+export const analyzeTweetContent = async (content: string, tweetId?: string): Promise<LLMAnalysisResult> => {
   try {
     // Try to load Hugging Face models
     await huggingFaceService.loadModels();
@@ -184,6 +266,13 @@ export const analyzeTweetContent = async (content: string): Promise<LLMAnalysisR
     if (!huggingFaceService.isModelLoaded()) {
       console.log("Hugging Face models failed to load, using fallback analysis");
       return fallbackAnalysis(content);
+    }
+    
+    // Get tweet context if available and Twitter context training is enabled
+    const tweetContext = tweetId ? huggingFaceService.getTweetContext(tweetId) : null;
+    if (tweetContext && huggingFaceService.hasTwitterContextTraining()) {
+      console.log("Using tweet context for analysis:", tweetContext);
+      // In a real implementation, we would use the context to inform the analysis
     }
     
     // Get pipelines
@@ -255,6 +344,21 @@ export const analyzeTweetContent = async (content: string): Promise<LLMAnalysisR
         "Focus on the topic rather than individuals",
         "Express criticism constructively"
       ];
+    }
+    
+    // If we have the tweet context and Twitter context training is enabled, store analysis result
+    if (tweetId && huggingFaceService.hasTwitterContextTraining()) {
+      // Store the analysis with the tweet context for future training
+      const trainingExample: TrainingExample = {
+        content,
+        label: decision,
+        categories: categories.filter(c => c.score > 0.5).map(c => c.name.toLowerCase()),
+        source: 'twitter',
+        contextData: huggingFaceService.getTweetContext(tweetId)
+      };
+      
+      // Add to training data automatically if enabled
+      huggingFaceService.addTrainingExample(trainingExample);
     }
     
     return {
