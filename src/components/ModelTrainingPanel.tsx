@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Check, AlertCircle } from "lucide-react";
+import { Loader2, Check, AlertCircle, Upload } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -183,6 +182,127 @@ const ModelTrainingPanel: React.FC = () => {
     }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is CSV
+    if (file.type !== "text/csv" && !file.name.endsWith('.csv')) {
+      toast({
+        title: "Invalid file format",
+        description: "Please upload a CSV file",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const csvText = event.target?.result as string;
+        const examples = parseCSV(csvText);
+        
+        if (examples.length === 0) {
+          toast({
+            title: "Empty or invalid CSV",
+            description: "The CSV file must contain at least one valid example",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        huggingFaceService.addTrainingExamples(examples);
+        const updatedData = huggingFaceService.getTrainingData();
+        setTrainingData(updatedData);
+        
+        toast({
+          title: "CSV data loaded",
+          description: `Added ${examples.length} training examples from CSV`,
+        });
+        
+        // Reset file input
+        e.target.value = '';
+      } catch (error) {
+        toast({
+          title: "Error parsing CSV",
+          description: error instanceof Error ? error.message : "Failed to parse CSV file",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    reader.readAsText(file);
+  };
+
+  const parseCSV = (csvText: string): TrainingExample[] => {
+    const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+    if (lines.length === 0) return [];
+
+    // Check header (first line)
+    const header = lines[0].toLowerCase();
+    const hasHeader = header.includes('content') || 
+                      header.includes('text') || 
+                      header.includes('label') || 
+                      header.includes('category');
+    
+    const startIndex = hasHeader ? 1 : 0;
+    const examples: TrainingExample[] = [];
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      // Split by comma, but respect quoted fields
+      const fields: string[] = [];
+      let fieldStart = 0;
+      let inQuotes = false;
+      
+      for (let j = 0; j < line.length; j++) {
+        if (line[j] === '"') {
+          inQuotes = !inQuotes;
+        } else if (line[j] === ',' && !inQuotes) {
+          fields.push(line.substring(fieldStart, j).trim().replace(/^"|"$/g, ''));
+          fieldStart = j + 1;
+        }
+      }
+      
+      // Add the last field
+      fields.push(line.substring(fieldStart).trim().replace(/^"|"$/g, ''));
+      
+      // Extract fields based on position
+      if (fields.length >= 2) {
+        const content = fields[0];
+        const label = fields[1].toLowerCase();
+        let actualLabel: "approved" | "flagged" | "rejected";
+        
+        // Convert various labels to our system's format
+        if (label === "approved" || label === "approve" || label === "positive" || label === "safe" || label === "1") {
+          actualLabel = "approved";
+        } else if (label === "flagged" || label === "flag" || label === "review" || label === "moderate" || label === "0") {
+          actualLabel = "flagged";
+        } else if (label === "rejected" || label === "reject" || label === "negative" || label === "unsafe" || label === "-1") {
+          actualLabel = "rejected";
+        } else {
+          // Default to flagged if label is unrecognized
+          actualLabel = "flagged";
+        }
+        
+        // Extract categories if present
+        const categories = fields.length > 2 ? 
+          fields[2].split(';').map(cat => cat.trim()).filter(cat => cat) : 
+          [];
+        
+        examples.push({
+          content,
+          label: actualLabel,
+          categories
+        });
+      }
+    }
+    
+    return examples;
+  };
+
   return (
     <Card className="h-full overflow-y-auto p-6">
       <h2 className="text-xl font-bold mb-4">Model Training</h2>
@@ -279,10 +399,30 @@ const ModelTrainingPanel: React.FC = () => {
             <div className="text-sm text-neutral-500">{trainingData.length} examples</div>
           </div>
           
+          <div className="mb-3">
+            <div className="flex flex-col space-y-2">
+              <label className="text-sm font-medium" htmlFor="csv-upload">
+                Import CSV Training Data
+              </label>
+              <div className="flex items-center">
+                <Input
+                  id="csv-upload"
+                  type="file"
+                  accept=".csv"
+                  className="flex-1"
+                  onChange={handleFileUpload}
+                />
+              </div>
+              <div className="text-xs text-neutral-500">
+                CSV format: content,label,categories (categories optional, semicolon-separated)
+              </div>
+            </div>
+          </div>
+          
           <div className="max-h-48 overflow-y-auto border rounded-md p-2 mb-3">
             {trainingData.length === 0 ? (
               <div className="text-sm text-neutral-500 text-center py-4">
-                No training examples yet. Add examples or load sample data.
+                No training examples yet. Add examples or import CSV data.
               </div>
             ) : (
               <div className="space-y-2">
