@@ -67,7 +67,7 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom color palette
+				// Custom color palette for dark mode
 				neutral: {
 					100: '#f5f5f7',
 					200: '#e5e5e7',
@@ -159,9 +159,9 @@ export default {
 				'blur': 'blur(20px)',
 			},
 			boxShadow: {
-				'subtle': '0 2px 10px rgba(0, 0, 0, 0.05)',
-				'elevation': '0 4px 20px rgba(0, 0, 0, 0.08)',
-				'strong': '0 10px 30px rgba(0, 0, 0, 0.12)',
+				'subtle': '0 2px 10px rgba(0, 0, 0, 0.15)',
+				'elevation': '0 4px 20px rgba(0, 0, 0, 0.25)',
+				'strong': '0 10px 30px rgba(0, 0, 0, 0.3)',
 			},
 		}
 	},
