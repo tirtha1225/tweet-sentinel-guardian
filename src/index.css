@@ -5,33 +5,33 @@
 
 @layer base {
   :root {
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
+    --background: 220 13% 8%;
+    --foreground: 210 20% 98%;
 
-    --card: 240 10% 4%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 13% 8%;
+    --card-foreground: 210 20% 98%;
 
-    --popover: 240 10% 4%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 13% 8%;
+    --popover-foreground: 210 20% 98%;
 
-    --primary: 211 100% 45%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 203 89% 53%;
+    --primary-foreground: 210 20% 98%;
 
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 16% 16%;
+    --secondary-foreground: 210 20% 98%;
 
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 220 16% 16%;
+    --muted-foreground: 220 6% 60%;
 
-    --accent: 240 4% 16%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 220 16% 16%;
+    --accent-foreground: 210 20% 98%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 210 20% 98%;
 
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 211 100% 45%;
+    --border: 220 16% 16%;
+    --input: 220 16% 16%;
+    --ring: 203 89% 53%;
   }
 }
 
@@ -89,27 +89,44 @@
 
 @layer components {
   .glass-panel {
-    @apply bg-neutral-800/70 backdrop-blur-xl border border-neutral-700/50 rounded-2xl;
+    @apply bg-neutral-900/80 backdrop-blur-xl border border-neutral-800/70 rounded-xl;
   }
   
   .glass-panel-sm {
-    @apply bg-neutral-800/60 backdrop-blur-lg border border-neutral-700/50 rounded-xl;
+    @apply bg-neutral-900/70 backdrop-blur-lg border border-neutral-800/70 rounded-xl;
   }
   
   .glass-button {
-    @apply px-4 py-2 bg-neutral-800/20 backdrop-blur-lg border border-neutral-700/10 
-    rounded-full shadow-subtle hover:bg-neutral-700/30
-    transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-light/50;
+    @apply px-4 py-2 bg-neutral-900/30 backdrop-blur-lg border border-neutral-800/20 
+    rounded-full shadow-subtle hover:bg-neutral-800/40
+    transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400/50;
   }
   
   .premium-card {
-    @apply rounded-2xl border border-neutral-700/50
-    bg-gradient-to-b from-neutral-800/80 to-neutral-900/80
+    @apply rounded-xl border border-neutral-800/70
+    bg-gradient-to-b from-neutral-900/90 to-neutral-950/90
     backdrop-blur-lg shadow-subtle overflow-hidden transition-all duration-300 hover:shadow-elevation;
   }
   
   .status-chip {
     @apply text-xs font-medium px-2.5 py-0.5 rounded-full inline-flex items-center gap-1;
+  }
+
+  /* Twitter-like components */
+  .twitter-card {
+    @apply border-b border-neutral-800 p-4 hover:bg-neutral-900/50 transition-colors duration-200;
+  }
+  
+  .twitter-button {
+    @apply bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white font-bold py-2 px-4 rounded-full transition-colors;
+  }
+  
+  .twitter-button-outline {
+    @apply border border-[#1d9bf0] text-[#1d9bf0] hover:bg-[#1d9bf0]/10 font-bold py-2 px-4 rounded-full transition-colors;
+  }
+  
+  .twitter-input {
+    @apply bg-neutral-800/50 border border-neutral-700/50 rounded-md focus:border-[#1d9bf0] focus:ring-1 focus:ring-[#1d9bf0] text-neutral-100;
   }
 }
 
@@ -124,11 +141,11 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-neutral-700/80 rounded-full;
+  @apply bg-neutral-800 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-neutral-600/80;
+  @apply bg-neutral-700;
 }
 
 /* Smooth transition for all elements */
