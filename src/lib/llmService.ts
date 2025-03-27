@@ -1,4 +1,3 @@
-
 import { Tweet } from './mockData';
 import { ragService } from './ragService';
 import { pipeline, env } from '@huggingface/transformers';
@@ -572,5 +571,100 @@ export const sampleTrainingData: TrainingExample[] = [
     content: "Your account has been compromised. Click here to reset your password.",
     label: "rejected",
     categories: ["spam", "scam"]
+  },
+  {
+    content: "She's a complete bitch and I can't stand her attitude.",
+    label: "rejected",
+    categories: ["profanity", "harassment"]
+  },
+  {
+    content: "This update is absolute shit. Developers don't know what they're doing.",
+    label: "rejected",
+    categories: ["profanity", "negativity"]
+  },
+  {
+    content: "Fuck this company and everyone who works there.",
+    label: "rejected",
+    categories: ["profanity", "harassment"]
+  },
+  {
+    content: "I'm going to find where you live and make you regret what you said.",
+    label: "rejected",
+    categories: ["threats", "harassment"]
+  },
+  {
+    content: "All members of this group are stupid idiots who don't deserve respect.",
+    label: "rejected",
+    categories: ["hate speech", "harassment"]
+  },
+  {
+    content: "These immigrants are ruining our country and should be sent back.",
+    label: "rejected",
+    categories: ["hate speech", "discrimination"]
+  },
+  {
+    content: "People from that religion are all terrorists.",
+    label: "rejected",
+    categories: ["hate speech", "discrimination", "misinformation"]
+  },
+  {
+    content: "Women shouldn't be allowed in these positions, they're too emotional.",
+    label: "rejected",
+    categories: ["discrimination", "hate speech"]
+  },
+  {
+    content: "That politician is going to destroy the economy with their stupid policies.",
+    label: "flagged",
+    categories: ["negativity", "political"]
+  },
+  {
+    content: "The refs in that game were completely blind. Worst officiating I've ever seen.",
+    label: "approved",
+    categories: ["negativity", "sports"]
+  },
+  {
+    content: "This new album is trash. Don't waste your money on it.",
+    label: "approved",
+    categories: ["negativity", "entertainment"]
+  },
+  {
+    content: "I strongly disagree with the points made in this article.",
+    label: "approved",
+    categories: ["critique"]
+  },
+  {
+    content: "Your argument doesn't make any sense and ignores basic facts.",
+    label: "approved",
+    categories: ["critique"]
+  },
+  {
+    content: "I'm so angry about the service I received today.",
+    label: "approved",
+    categories: ["negative", "customer service"]
+  },
+  {
+    content: "Everyone who voted for that candidate is an idiot.",
+    label: "flagged",
+    categories: ["political", "insult"]
+  },
+  {
+    content: "People who believe in that conspiracy theory are dumb as rocks.",
+    label: "flagged",
+    categories: ["insult", "negativity"]
+  },
+  {
+    content: "The president is doing a terrible job dealing with this crisis.",
+    label: "approved",
+    categories: ["political", "critique"]
+  },
+  {
+    content: "Just bought the latest iPhone and I'm loving it! #technology",
+    label: "approved",
+    categories: ["positive", "consumer"]
+  },
+  {
+    content: "This is the worst restaurant in town. The food was cold and service was terrible.",
+    label: "approved",
+    categories: ["negative", "review"]
   }
 ];
