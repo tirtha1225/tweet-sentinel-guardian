@@ -1,22 +1,11 @@
-# Welcome to my Twitter Content Moderation project
+# Welcome to my Twitter Content Moderation project - Sentinel Beta
 #Here is the link to my project : https://preview-1623f65e--tweet-sentinel-guardian.lovable.app/
 ## Project info
 
-**URL**: https://lovable.dev/projects/c7e73b87-c8db-4cbc-bd58-1b3d0b34ba33
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/c7e73b87-c8db-4cbc-bd58-1b3d0b34ba33) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
+*
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in the project .
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
