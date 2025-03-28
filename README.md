@@ -1,5 +1,5 @@
-# Welcome to your Lovable project
-
+# Welcome to my Twitter Content Moderation project
+#Here is the link to my project : https://github.com/tirtha1225/tweet-sentinel-guardian
 ## Project info
 
 **URL**: https://lovable.dev/projects/c7e73b87-c8db-4cbc-bd58-1b3d0b34ba33
