@@ -4,7 +4,7 @@ Here is the link to my project : https://preview-1623f65e--tweet-sentinel-guardi
 Sentinel Beta is an innovative content moderation system designed for Twitter, aiming to enhance the platform's ability to manage and filter inappropriate content. By leveraging advanced natural language processing (NLP) and Deep Learning technologies, Sentinel Beta provides a robust solution for identifying and moderating tweets that violate content moderation policies.
 
 
-## Project Objective:
+## Project Objective
 The primary goal of Project Sentinel Beta is to create a safer and more inclusive online environment on Twitter. By detecting and flagging content that contains hate speech, misinformation, harassment, and other forms of harmful speech, Sentinel Beta helps maintain a platform where users can engage in meaningful and respectful conversations.
 
 **Use your preferred IDE**
