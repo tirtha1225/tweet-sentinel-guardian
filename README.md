@@ -1,6 +1,7 @@
 #  Welcome to my Project Sentinel Beta - A Twitter Content Moderation System 
 Here is the link to my project : https://preview-1623f65e--tweet-sentinel-guardian.lovable.app/
 ## Project info
+![image](https://github.com/user-attachments/assets/76a399f6-be32-4a6a-9e97-aecb138b70f8)
 
 
 **Use your preferred IDE**
