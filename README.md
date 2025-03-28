@@ -2,7 +2,7 @@
 #Here is the link to my project : https://preview-1623f65e--tweet-sentinel-guardian.lovable.app/
 ## Project info
 
-*
+
 **Use your preferred IDE**
 
 If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in the project .
