@@ -1,4 +1,4 @@
-# Welcome to my Twitter Content Moderation project - Sentinel Beta
+#  Welcome to my Project Sentinel Beta - A Twitter Content Moderation System 
 #Here is the link to my project : https://preview-1623f65e--tweet-sentinel-guardian.lovable.app/
 ## Project info
 
