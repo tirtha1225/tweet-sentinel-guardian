@@ -1,7 +1,7 @@
 #  Welcome to my Project Sentinel Beta - A Twitter Content Moderation System 
 Here is the link to my project : https://preview-1623f65e--tweet-sentinel-guardian.lovable.app/
 ## Project info
-Sentinel Beta is an innovative content moderation system designed for Twitter, aiming to enhance the platform's ability to manage and filter inappropriate content. By leveraging advanced natural language processing (NLP) and machine learning technologies, Sentinel Beta provides a robust solution for identifying and moderating tweets that violate content moderation policies.
+Sentinel Beta is an innovative content moderation system designed for Twitter, aiming to enhance the platform's ability to manage and filter inappropriate content. By leveraging advanced natural language processing (NLP) and Deep Learning technologies, Sentinel Beta provides a robust solution for identifying and moderating tweets that violate content moderation policies.
 
 
 ## Project Objective:
